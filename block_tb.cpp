@@ -1,11 +1,14 @@
 #include <verilated.h>
+#include <verilated_vcd_c.h>
 #include "obj_dir/Vblock.h"
 
 #include <cstdio>
 
+const char* TRACE_FILE = "obj_dir/trace.vcd";
+
 Vblock *block;
 
-uint64_t main_time = 0;
+vluint64_t main_time = 0;
 
 double sc_time_stamp() {
 	return main_time;
@@ -15,6 +18,12 @@ int main(int argc, char ** argv) {
 	Verilated::commandArgs(argc, argv);
 
 	block = new Vblock;
+
+	// Init trace
+	Verilated::traceEverOn(true);
+	VerilatedVcdC* tfp = new VerilatedVcdC;
+	block->trace(tfp, 99);
+	tfp->open(TRACE_FILE);
 
 	// Initialize inputs
 	uint8_t clk = 0;
@@ -40,9 +49,9 @@ int main(int argc, char ** argv) {
 			block->in1 = 0;
 		}
 
-		// Evaluate and print output
+		// Evaluate and dump trace
 		block->eval();
-		printf("Time: %2llu clk: %d in1: %d in2: %d out: %d\n", main_time, block->clk, block->in1, block->in2, block->out);
+		tfp->dump(main_time);
 		
 		// Advance time
 		main_time++;
@@ -52,6 +61,9 @@ int main(int argc, char ** argv) {
 			break;
 		}
 	}
+
+	tfp->close();
+	printf("Wrote output trace to %s\n", TRACE_FILE);
 
 	block->final();
 	delete block;
