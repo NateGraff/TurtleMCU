@@ -4,6 +4,7 @@ module pc(
 	input  wire       rst_n,
 	input  wire [9:0] din,
 	input  wire       load,
+	input  wire       inc,
 	output reg  [9:0] dout);
 
 	always_ff @(posedge clk or negedge rst_n) begin
@@ -12,7 +13,7 @@ module pc(
 		end else begin
 			if(load) begin
 				dout <= din;
-			end else begin
+			end else if(inc) begin
 				dout <= dout + 1;
 			end
 		end

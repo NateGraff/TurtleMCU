@@ -26,6 +26,7 @@ module cpu(
 
 	wire flags_load;
 
+	wire pc_inc;
 	wire pc_load;
 	wire pc_sel;
 	wire [9:0] pc_din;
@@ -59,6 +60,7 @@ module cpu(
 		.flags_load(flags_load),
 		.pc_load(pc_load),
 		.pc_sel(pc_sel),
+		.pc_inc(pc_inc),
 		.ram_addr_sel(ram_addr_sel),
 		.ram_write(ram_write),
 		.rf_din_sel(rf_din_sel),
@@ -101,6 +103,7 @@ module cpu(
 		.rst_n(rst_n),
 		.din(pc_din),
 		.load(pc_load),
+		.inc(pc_inc),
 		.dout(pc_dout));
 
 	wire [7:0] opcode_offset_8;

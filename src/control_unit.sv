@@ -55,6 +55,7 @@ module control_unit(
 
 	output reg pc_load,
 	output reg pc_sel,
+	output reg pc_inc,
 
 	output reg [1:0] ram_addr_sel,
 	output reg ram_write,
@@ -106,6 +107,7 @@ module control_unit(
 
 		pc_load = 0;
 		pc_sel  = 0;
+		pc_inc  = 0;
 
 		ram_addr_sel = 0;
 		ram_write    = 0;
@@ -131,6 +133,8 @@ module control_unit(
 				
 			end
 			EXECUTE: begin
+				pc_inc = 1;
+
 				case({3'b0, opcode})
 					default : begin
 
