@@ -105,7 +105,7 @@ module control_unit(
 			EXECUTE: begin
 				pc_inc = 1;
 
-				case({3'b0, opcode})
+				case(opcode)
 					default : begin
 
 					end
@@ -139,6 +139,7 @@ module control_unit(
 					end
 					`OPCODE_CMP : begin
 						alu_op = `ALU_SUB;
+						flags_load = 1;
 					end
 					`OPCODE_JMP : begin
 						pc_load = 1;
@@ -186,34 +187,50 @@ module control_unit(
 					`OPCODE_ADD : begin
 						alu_op = `ALU_ADD;
 						rf_write = 1;
+						rf_din_sel = `RF_DIN_ALU;
+						flags_load = 1;
 					end
 					`OPCODE_SUB : begin
 						alu_op = `ALU_SUB;
 						rf_write = 1;
+						rf_din_sel = `RF_DIN_ALU;
+						flags_load = 1;
 					end
 					`OPCODE_AND : begin
 						alu_op = `ALU_AND;
 						rf_write = 1;
+						rf_din_sel = `RF_DIN_ALU;
+						flags_load = 1;
 					end
 					`OPCODE_OR  : begin
 						alu_op = `ALU_OR;
 						rf_write = 1;
+						rf_din_sel = `RF_DIN_ALU;
+						flags_load = 1;
 					end
 					`OPCODE_NOT : begin
 						alu_op = `ALU_NOT;
 						rf_write = 1;
+						rf_din_sel = `RF_DIN_ALU;
+						flags_load = 1;
 					end
 					`OPCODE_XOR : begin
 						alu_op = `ALU_XOR;
 						rf_write = 1;
+						rf_din_sel = `RF_DIN_ALU;
+						flags_load = 1;
 					end
 					`OPCODE_SHR : begin
 						alu_op = `ALU_SHR;
 						rf_write = 1;
+						rf_din_sel = `RF_DIN_ALU;
+						flags_load = 1;
 					end
 					`OPCODE_SHL : begin
 						alu_op = `ALU_SHL;
 						rf_write = 1;
+						rf_din_sel = `RF_DIN_ALU;
+						flags_load = 1;
 					end
 					`OPCODE_CLR : begin
 						rf_write = 1;

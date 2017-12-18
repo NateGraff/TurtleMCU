@@ -88,12 +88,12 @@ module cpu(
 		.zero(alu_z));
 
 	wire [9:0] opcode_addr;
-	assign opcode_addr = opcode[10:1];
+	assign opcode_addr = ram_dout[10:1];
 
 	always_comb begin
 		case(pc_sel)
 			`PC_DIN_OP:  pc_din = opcode_addr;
-			`PC_DIN_RAM: pc_din = ram_dout[9:0];
+			`PC_DIN_RAM: pc_din = ram_dout_last[9:0];
 		endcase
 	end
 
@@ -111,8 +111,8 @@ module cpu(
 
 	wire [7:0] opcode_offset_8;
 	wire [4:0] opcode_offset_5;
-	assign opcode_offset_8 = opcode[7:0];
-	assign opcode_offset_5 = opcode[4:0];
+	assign opcode_offset_8 = ram_dout[7:0];
+	assign opcode_offset_5 = ram_dout[4:0];
 
 	always_comb begin
 		case(ram_addr_sel)
@@ -132,12 +132,12 @@ module cpu(
 		endcase
 	end
 
-	reg [15:0] opcode;
+	reg [15:0] ram_dout_last;
 	always_ff @(posedge clk or negedge rst_n) begin
 		if(~rst_n) begin
-			opcode <= 0;
+			ram_dout_last <= 0;
 		end else begin
-			opcode <= ram_dout;
+			ram_dout_last <= ram_dout;
 		end
 	end
 
@@ -152,9 +152,9 @@ module cpu(
 	wire [7:0] opcode_immed;
 	wire [2:0] opcode_a;
 	wire [2:0] opcode_b;
-	assign opcode_immed = opcode[7:0];
-	assign opcode_a     = opcode[10:8];
-	assign opcode_b     = opcode[7:5];
+	assign opcode_immed = ram_dout[7:0];
+	assign opcode_a     = ram_dout[10:8];
+	assign opcode_b     = ram_dout[7:5];
 
 	always_comb begin
 		case(rf_din_sel)
@@ -162,12 +162,14 @@ module cpu(
 			`RF_DIN_ALU:  rf_din = alu_out;
 			`RF_DIN_LOW:  rf_din = {8'h00, opcode_immed};
 			`RF_DIN_HIGH: rf_din = {opcode_immed, 8'h00};
-			`RF_DIN_RAM:  rf_din = ram_dout;
+			`RF_DIN_RAM:  rf_din = ram_dout_last;
 			`RF_DIN_IN:   rf_din = in_port;
 			`RF_DIN_SP:   rf_din = {6'b0, sp_dout};
 			`RF_DIN_ZERO: rf_din = 0;
 		endcase
 	end
+
+	assign out_port = rf_a;
 
 	rf rf_i(
 		.clk(clk),

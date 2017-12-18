@@ -59,7 +59,7 @@ int main(int argc, char ** argv) {
 
 		if(clk == 1) {
 			if(cpu->output_valid == 1) {
-				printf("time: %lu ns output: 0x%4X\n", main_time, cpu->out_port);
+				printf("time: %lu ns output: 0x%04X\n", main_time, cpu->out_port);
 			}
 		}
 		
