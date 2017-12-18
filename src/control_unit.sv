@@ -57,7 +57,10 @@ module control_unit(
 	output reg pc_sel,
 	output reg pc_inc,
 
+	output reg [9:0] rom_addr,
+
 	output reg [1:0] ram_addr_sel,
+	output reg [1:0] ram_din_sel,
 	output reg ram_write,
 
 	output reg [2:0] rf_din_sel,
@@ -83,9 +86,11 @@ module control_unit(
 			case(state)
 				RESET: begin
 					state <= LOAD_ROM;
+					rom_addr = 0;
 				end
 				LOAD_ROM: begin
 					state <= FETCH;
+					rom_addr = rom_addr + 1;
 				end
 				FETCH: begin
 					state <= EXECUTE;
@@ -110,6 +115,7 @@ module control_unit(
 		pc_inc  = 0;
 
 		ram_addr_sel = 0;
+		ram_din_sel = 0;
 		ram_write    = 0;
 
 		rf_din_sel = 0;
@@ -127,7 +133,9 @@ module control_unit(
 				
 			end
 			LOAD_ROM: begin
-				
+				ram_addr_sel = 3;
+				ram_din_sel = 2;
+				ram_write = 1;
 			end
 			FETCH: begin
 				
@@ -196,6 +204,7 @@ module control_unit(
 					`OPCODE_CALL: begin
 						pc_load = 1;
 						sp_dec = 1;
+						ram_din_sel = 1;
 						ram_write = 1;
 					end
 					`OPCODE_RET : begin

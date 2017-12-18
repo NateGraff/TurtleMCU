@@ -32,9 +32,13 @@ module cpu(
 	wire [9:0] pc_din;
 	wire [9:0] pc_dout;
 
+	wire [9:0] rom_addr;
+	wire [15:0] rom_dout;
+
 	wire [1:0] ram_addr_sel;
 	wire [9:0] ram_addr;
 	wire ram_write;
+	wire [1:0] ram_din_sel;
 	wire [15:0] ram_din;
 
 	wire [2:0] rf_din_sel;
@@ -61,7 +65,9 @@ module cpu(
 		.pc_load(pc_load),
 		.pc_sel(pc_sel),
 		.pc_inc(pc_inc),
+		.rom_addr(rom_addr),
 		.ram_addr_sel(ram_addr_sel),
+		.ram_din_sel(ram_din_sel),
 		.ram_write(ram_write),
 		.rf_din_sel(rf_din_sel),
 		.rf_write(rf_write),
@@ -106,6 +112,10 @@ module cpu(
 		.inc(pc_inc),
 		.dout(pc_dout));
 
+	rom rom_i(
+		.addr(rom_addr),
+		.dout(rom_dout));
+
 	wire [7:0] opcode_offset_8;
 	wire [4:0] opcode_offset_5;
 	assign opcode_offset_8 = opcode[7:0];
@@ -116,7 +126,16 @@ module cpu(
 			0: ram_addr = pc_dout;
 			1: ram_addr = sp_dout + {2'b0, opcode_offset_8};
 			2: ram_addr = rf_b[9:0] + {5'b0, opcode_offset_5};
-			3: ram_addr = 0;
+			3: ram_addr = rom_addr;
+		endcase
+	end
+
+	always_comb begin
+		case(ram_din_sel)
+			0: ram_din = rf_a;
+			1: ram_din = {6'b0, pc_dout};
+			2: ram_din = rom_dout;
+			3: ram_din = 0;
 		endcase
 	end
 
