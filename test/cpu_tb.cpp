@@ -53,13 +53,15 @@ int main(int argc, char ** argv) {
 		clk = !clk;
 		cpu->clk = clk;
 
-		if(clk == 1) {
-
-		}
-
 		// Evaluate and dump trace
 		cpu->eval();
 		tfp->dump(main_time);
+
+		if(clk == 1) {
+			if(cpu->output_valid == 1) {
+				printf("time: %lu ns output: 0x%4X\n", main_time, cpu->out_port);
+			}
+		}
 		
 		// Advance time
 		main_time++;
