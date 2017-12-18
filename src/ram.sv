@@ -2,12 +2,12 @@
 module ram(
 	input  wire       clk,
 	input  wire       rst_n,
-	input  wire [5:0] addr,
-	input  wire [7:0] din,
+	input  wire [9:0] addr,
+	input  wire [15:0] din,
 	input  wire       write,
-	output reg  [7:0] dout);
+	output reg  [15:0] dout);
 
-	reg [64:0][7:0] memory;
+	reg [1023:0][15:0] memory;
 
 	always_ff @(posedge clk or negedge rst_n) begin
 		if(~rst_n) begin

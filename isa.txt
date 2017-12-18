@@ -1,0 +1,76 @@
+TurtleCore Instruction Set Architecture
+---------------------------------------
+
+op-only
+
+     op
+     5
+     -----
+
+nop  00000 -----------
+ret  01111 -----------
+
+reg-reg
+
+     op    a   b
+     5     3   3
+     ----- --- ---
+
+mv   00001 aaa bbb -----
+
+cmp  01000 aaa bbb -----
+
+add  10010 aaa bbb -----
+sub  10011 aaa bbb -----
+and  10100 aaa bbb -----
+or   10101 aaa bbb -----
+not  10110 aaa bbb -----
+xor  10111 aaa bbb -----
+shr  11000 aaa bbb -----
+shl  11001 aaa bbb -----
+
+reg-imm
+
+     op    a   imm
+     5     3   8
+     ----- --- --------
+
+mvh  00010 aaa iiiiiiii
+mvl  00011 aaa iiiiiiii
+
+reg
+
+     op    a
+     5     3
+     ----- ---
+
+push 10000 aaa --------
+pop  10001 aaa --------
+in   00110 aaa --------
+out  00111 aaa --------
+clr  11011 aaa --------
+lsp  11100 aaa --------
+rsp  11101 aaa --------
+
+reg-offset
+
+     op    reg offset
+     5     3
+     ----- --- -------
+
+ld   00100 aaa 0000000
+st   00101 aaa 0000000
+
+addr
+
+     op    addr
+     5     10
+     ----- ----------
+
+call 01110 0000000000 -
+jmp  01001 0000000000 -
+jc   01010 0000000000 -
+jnc  01011 0000000000 -
+jz   01100 0000000000 -
+jnz  01101 0000000000 -
+lsp  11010 0000000000 -

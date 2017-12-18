@@ -3,8 +3,6 @@
 #include "../obj_dir/Vrf.h"
 
 #include <cstdio>
-#include <cstdlib>
-#include <cassert>
 
 const char* TRACE_FILE = "obj_dir/rf_trace.vcd";
 

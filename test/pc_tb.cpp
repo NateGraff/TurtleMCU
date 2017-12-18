@@ -4,7 +4,6 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <cassert>
 
 const char* TRACE_FILE = "obj_dir/pc_trace.vcd";
 const vluint64_t sim_time = 100;

@@ -4,12 +4,12 @@ module rf(
 	input  wire       rst_n,
 	input  wire [2:0] addr_a,
 	input  wire [2:0] addr_b,
-	input  wire [7:0] din,
+	input  wire [15:0] din,
 	input  wire       write,
-	output reg  [7:0] dout_a,
-	output reg  [7:0] dout_b);
+	output reg  [15:0] dout_a,
+	output reg  [15:0] dout_b);
 
-	reg [7:0][7:0] registers;
+	reg [7:0][15:0] registers;
 
 	always_comb begin
 		dout_a = registers[addr_a];

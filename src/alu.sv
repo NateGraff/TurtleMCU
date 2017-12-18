@@ -1,9 +1,9 @@
 
 module alu(
 	input  wire [2:0] op,
-	input  wire [7:0] arg_a,
-	input  wire [7:0] arg_b,
-	output reg  [7:0] out,
+	input  wire [15:0] arg_a,
+	input  wire [15:0] arg_b,
+	output reg  [15:0] out,
 	output reg        carry,
 	output reg        zero);
 
@@ -26,14 +26,14 @@ module alu(
 		endcase
 	end
 
-	reg [8:0] add_out;
+	reg [16:0] add_out;
 
 	always_comb begin
 		case(op_decode)
 			ADD: begin
 				add_out = arg_a + arg_b;
-				out = add_out[7:0];
-				carry = (add_out >> 8 == 9'h001);
+				out = add_out[15:0];
+				carry = (add_out >> 16 == 17'h00001);
 				zero = (out == 0);
 			end
 			SUB: begin
@@ -62,13 +62,13 @@ module alu(
 				zero = (out == 0);
 			end
 			ROL: begin
-				out = (arg_a << 1) | (arg_a >> 7);
-				carry = (arg_a >> 7 == 8'h01);
+				out = (arg_a << 1) | (arg_a >> 15);
+				carry = (arg_a >> 15 == 16'h0001);
 				zero = (out == 0);
 			end
 			ROR: begin
-				out = (arg_a >> 1) | (arg_a << 7);
-				carry = (arg_a << 7 == 8'h80);
+				out = (arg_a >> 1) | (arg_a << 15);
+				carry = (arg_a << 15 == 16'h8000);
 				zero = (out == 0);
 			end
 		endcase

@@ -3,9 +3,12 @@
 #include "../obj_dir/Valu.h"
 
 #include <cstdio>
+#include <cstdlib>
 
 VerilatedVcdC* tfp = new VerilatedVcdC;
 const char* TRACE_FILE = "obj_dir/alu_trace.vcd";
+
+const int test_rounds = 50;
 
 #define ADD 0
 #define SUB 1
@@ -24,7 +27,7 @@ double sc_time_stamp() {
 	return main_time;
 }
 
-void aluOp(uint8_t op, uint8_t arg_a, uint8_t arg_b) {
+void aluOp(uint16_t op, uint16_t arg_a, uint16_t arg_b) {
 	alu->op = op;
 	alu->arg_a = arg_a;
 	alu->arg_b = arg_b;
@@ -34,7 +37,7 @@ void aluOp(uint8_t op, uint8_t arg_a, uint8_t arg_b) {
 	main_time++;
 }
 
-int testOp(uint8_t op, uint8_t arg_a, uint8_t arg_b, uint8_t out, uint8_t carry=0) {
+int testOp(uint16_t op, uint16_t arg_a, uint16_t arg_b, uint16_t out, uint16_t carry=0) {
 	int errors = 0;
 
 	aluOp(op, arg_a, arg_b);
@@ -55,24 +58,24 @@ int testOp(uint8_t op, uint8_t arg_a, uint8_t arg_b, uint8_t out, uint8_t carry=
 	return errors;
 }
 
-int testAdd(uint8_t arg_a, uint8_t arg_b) {
-	uint8_t carry = ((arg_a + arg_b) > 255) ? 1 : 0;
+int testAdd(uint16_t arg_a, uint16_t arg_b) {
+	uint16_t carry = ((arg_a + arg_b) >> 16) ? 1 : 0;
 	return testOp(ADD, arg_a, arg_b, arg_a + arg_b, carry);
 }
 
-int testSub(uint8_t arg_a, uint8_t arg_b) {
-	uint8_t carry = (arg_b > arg_a) ? 1 : 0;
+int testSub(uint16_t arg_a, uint16_t arg_b) {
+	uint16_t carry = (arg_b > arg_a) ? 1 : 0;
 	return testOp(SUB, arg_a, arg_b, arg_a - arg_b, carry);
 }
 
-int testRol(uint8_t arg_a) {
-	uint8_t carry = (arg_a & 0x80) ? 1 : 0;
-	return testOp(ROL, arg_a, 0, (arg_a << 1) | (arg_a >> 7), carry);
+int testRol(uint16_t arg_a) {
+	uint16_t carry = (arg_a & 0x8000) ? 1 : 0;
+	return testOp(ROL, arg_a, 0, (arg_a << 1) | (arg_a >> 15), carry);
 }
 
-int testRor(uint8_t arg_a) {
-	uint8_t carry = (arg_a & 0x01) ? 1 : 0;
-	return testOp(ROR, arg_a, 0, (arg_a >> 1) | (arg_a << 7), carry);
+int testRor(uint16_t arg_a) {
+	uint16_t carry = (arg_a & 0x0001) ? 1 : 0;
+	return testOp(ROR, arg_a, 0, (arg_a >> 1) | (arg_a << 15), carry);
 }
 
 int verifyAlu() {
@@ -84,53 +87,50 @@ int verifyAlu() {
 	alu->arg_b = 0;
 
 	// ADD
-	for(int i = 0; i < 256; i++) {
-		for(int j = 0; j < 256; j++) {
-			errors += testAdd(i, j);
-		}
+	for(int i = 0; i < test_rounds; i++) {
+		errors += testAdd(rand(), rand());
 	}
 
 	// SUB
-	for(int i = 0; i < 256; i++) {
-		for(int j = 0; j < 256; j++) {
-			errors += testSub(i, j);
-		}
+	for(int i = 0; i < test_rounds; i++) {
+		errors += testSub(rand(), rand());
 	}
 
 	// AND
-	for(int i = 0; i < 256; i++) {
-		for(int j = 0; j < 256; j++) {
-			errors += testOp(AND, i, j, i & j);
-		}
+	for(int i = 0; i < test_rounds; i++) {
+		uint16_t a = rand();
+		uint16_t b = rand();
+		errors += testOp(AND, a, b, a & b);
 	}
 
 	// OR
-	for(int i = 0; i < 256; i++) {
-		for(int j = 0; j < 256; j++) {
-			errors += testOp(OR, i, j, i | j);
-		}
+	for(int i = 0; i < test_rounds; i++) {
+		uint16_t a = rand();
+		uint16_t b = rand();
+		errors += testOp(OR, a, b, a | b);
 	}
 
 	// NOT
-	for(int i = 0; i < 256; i++) {
-		errors += testOp(NOT, i, 0, ~i);
+	for(int i = 0; i < test_rounds; i++) {
+		uint16_t a = rand();
+		errors += testOp(NOT, a, 0, ~a);
 	}
 
 	// XOR
-	for(int i = 0; i < 256; i++) {
-		for(int j = 0; j < 256; j++) {
-			errors += testOp(XOR, i, j, i ^ j);
-		}
+	for(int i = 0; i < test_rounds; i++) {
+		uint16_t a = rand();
+		uint16_t b = rand();
+		errors += testOp(XOR, a, b, a ^ b);
 	}
 
 	// ROL
-	for(int i = 0; i < 256; i++) {
-		errors += testRol(i);
+	for(int i = 0; i < test_rounds; i++) {
+		errors += testRol(rand());
 	}
 
 	// ROR
-	for(int i = 0; i < 256; i++) {
-		errors += testRor(i);
+	for(int i = 0; i < test_rounds; i++) {
+		errors += testRor(rand());
 	}
 
 	return errors;
