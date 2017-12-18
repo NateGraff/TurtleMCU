@@ -57,6 +57,15 @@
 `define SP_DIN_OP  1'b0
 `define SP_DIN_RF 1'b1
 
+`define ALU_ADD 3'b000
+`define ALU_SUB 3'b001
+`define ALU_AND 3'b010
+`define ALU_OR  3'b011
+`define ALU_NOT 3'b100
+`define ALU_XOR 3'b101
+`define ALU_SHL 3'b110
+`define ALU_SHR 3'b111
+
 module control_unit(
 	input wire clk,
 	input wire rst_n,
@@ -194,7 +203,7 @@ module control_unit(
 						output_valid = 1;
 					end
 					`OPCODE_CMP : begin
-						alu_op = 3'b001;
+						alu_op = `ALU_SUB;
 					end
 					`OPCODE_JMP : begin
 						pc_load = 1;
@@ -240,35 +249,35 @@ module control_unit(
 						sp_inc = 1;
 					end
 					`OPCODE_ADD : begin
-						alu_op = 3'b000;
+						alu_op = `ALU_ADD;
 						rf_write = 1;
 					end
 					`OPCODE_SUB : begin
-						alu_op = 3'b001;
+						alu_op = `ALU_SUB;
 						rf_write = 1;
 					end
 					`OPCODE_AND : begin
-						alu_op = 3'b010;
+						alu_op = `ALU_AND;
 						rf_write = 1;
 					end
 					`OPCODE_OR  : begin
-						alu_op = 3'b011;
+						alu_op = `ALU_OR;
 						rf_write = 1;
 					end
 					`OPCODE_NOT : begin
-						alu_op = 3'b100;
+						alu_op = `ALU_NOT;
 						rf_write = 1;
 					end
 					`OPCODE_XOR : begin
-						alu_op = 3'b101;
+						alu_op = `ALU_XOR;
 						rf_write = 1;
 					end
 					`OPCODE_SHR : begin
-						alu_op = 3'b110;
+						alu_op = `ALU_SHR;
 						rf_write = 1;
 					end
 					`OPCODE_SHL : begin
-						alu_op = 3'b111;
+						alu_op = `ALU_SHL;
 						rf_write = 1;
 					end
 					`OPCODE_CLR : begin

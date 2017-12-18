@@ -4,8 +4,10 @@ TEST_DIR = test
 
 default: cpu
 
-cpu: $(SRC_DIR)/*.sv
-	verilator -cc $(SRC_DIR)/cpu.sv -I$(SRC_DIR)
+cpu: $(SRC_DIR)/*.sv $(TEST_DIR)/cpu_tb.cpp
+	verilator -cc $(SRC_DIR)/cpu.sv -I$(SRC_DIR) --trace --exe $(TEST_DIR)/cpu_tb.cpp
+	$(MAKE) -j -C obj_dir/ -f Vcpu.mk
+	./obj_dir/Vcpu
 
 units: rf ram alu pc
 	./obj_dir/Vrf
