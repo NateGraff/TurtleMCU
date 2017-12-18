@@ -32,6 +32,19 @@
 `define OPCODE_LDI  8'b11110
 `define OPCODE_STI  8'b11111
 
+`define PC_DIN_OP  1'b0
+`define PC_DIN_RAM 1'b1
+
+`define RAM_ADDR_PC  2'b00
+`define RAM_ADDR_SP  2'b01
+`define RAM_ADDR_RF  2'b10
+`define RAM_ADDR_ROM 2'b11
+
+`define RAM_DIN_RF  2'b00
+`define RAM_DIN_PC  2'b01
+`define RAM_DIN_ROM 2'b10
+`define RAM_DIN_SP  2'b11
+
 `define RF_DIN_B    3'b000
 `define RF_DIN_ALU  3'b001
 `define RF_DIN_LOW  3'b010
@@ -40,6 +53,9 @@
 `define RF_DIN_IN   3'b101
 `define RF_DIN_SP   3'b110
 `define RF_DIN_ZERO 3'b111
+
+`define SP_DIN_OP  1'b0
+`define SP_DIN_RF 1'b1
 
 module control_unit(
 	input wire clk,
@@ -86,11 +102,11 @@ module control_unit(
 			case(state)
 				RESET: begin
 					state <= LOAD_ROM;
-					rom_addr = 0;
+					rom_addr <= 0;
 				end
 				LOAD_ROM: begin
 					state <= FETCH;
-					rom_addr = rom_addr + 1;
+					rom_addr <= rom_addr + 1;
 				end
 				FETCH: begin
 					state <= EXECUTE;
@@ -111,20 +127,20 @@ module control_unit(
 		flags_load = 0;
 
 		pc_load = 0;
-		pc_sel  = 0;
+		pc_sel  = `PC_DIN_OP;
 		pc_inc  = 0;
 
-		ram_addr_sel = 0;
-		ram_din_sel = 0;
+		ram_addr_sel = `RAM_ADDR_PC;
+		ram_din_sel = `RAM_DIN_RF;
 		ram_write    = 0;
 
-		rf_din_sel = 0;
+		rf_din_sel = `RF_DIN_B;
 		rf_write   = 0;
 
 		sp_load = 0;
 		sp_inc  = 0;
 		sp_dec  = 0;
-		sp_sel  = 0;
+		sp_sel  = `SP_DIN_OP;
 
 		output_valid = 0;
 
@@ -133,8 +149,8 @@ module control_unit(
 				
 			end
 			LOAD_ROM: begin
-				ram_addr_sel = 3;
-				ram_din_sel = 2;
+				ram_addr_sel = `RAM_ADDR_ROM;
+				ram_din_sel = `RAM_DIN_ROM;
 				ram_write = 1;
 			end
 			FETCH: begin
@@ -160,12 +176,12 @@ module control_unit(
 						rf_write = 1;
 					end
 					`OPCODE_LD  : begin
-						ram_addr_sel = 1;
+						ram_addr_sel = `RAM_ADDR_SP;
 						rf_din_sel = `RF_DIN_RAM;
 						rf_write = 1;
 					end
 					`OPCODE_ST  : begin
-						ram_addr_sel = 1;
+						ram_addr_sel = `RAM_ADDR_SP;
 						ram_write = 1;
 					end
 					`OPCODE_IN  : begin
@@ -204,12 +220,12 @@ module control_unit(
 					`OPCODE_CALL: begin
 						pc_load = 1;
 						sp_dec = 1;
-						ram_din_sel = 1;
+						ram_din_sel = `RAM_DIN_SP;
 						ram_write = 1;
 					end
 					`OPCODE_RET : begin
 						pc_load = 1;
-						pc_sel = 1;
+						pc_sel = `PC_DIN_RAM;
 						sp_inc = 1;
 					end
 					`OPCODE_PUSH: begin
@@ -259,10 +275,11 @@ module control_unit(
 					end
 					`OPCODE_LSPA: begin
 						sp_load = 1;
+						sp_sel = `SP_DIN_OP;
 					end
 					`OPCODE_LSPR: begin
 						sp_load = 1;
-						sp_sel = 1;
+						sp_sel = `SP_DIN_RF;
 					end
 					`OPCODE_RSP : begin
 						rf_write = 1;
@@ -270,10 +287,10 @@ module control_unit(
 					end
 					`OPCODE_LDI : begin
 						rf_write = 1;
-						ram_addr_sel = 2;
+						ram_addr_sel = `RAM_ADDR_RF;
 					end
 					`OPCODE_STI : begin
-						ram_addr_sel = 2;
+						ram_addr_sel = `RAM_ADDR_RF;
 						ram_write = 1;
 					end
 				endcase

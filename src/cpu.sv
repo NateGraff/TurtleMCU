@@ -1,4 +1,17 @@
 
+`define PC_DIN_OP  1'b0
+`define PC_DIN_RAM 1'b1
+
+`define RAM_ADDR_PC  2'b00
+`define RAM_ADDR_SP  2'b01
+`define RAM_ADDR_RF  2'b10
+`define RAM_ADDR_ROM 2'b11
+
+`define RAM_DIN_RF  2'b00
+`define RAM_DIN_PC  2'b01
+`define RAM_DIN_ROM 2'b10
+`define RAM_DIN_SP  2'b11
+
 `define RF_DIN_B    3'b000
 `define RF_DIN_ALU  3'b001
 `define RF_DIN_LOW  3'b010
@@ -7,6 +20,9 @@
 `define RF_DIN_IN   3'b101
 `define RF_DIN_SP   3'b110
 `define RF_DIN_ZERO 3'b111
+
+`define SP_DIN_OP  1'b0
+`define SP_DIN_RF 1'b1
 
 module cpu(
 	input wire clk,
@@ -99,8 +115,8 @@ module cpu(
 
 	always_comb begin
 		case(pc_sel)
-			0: pc_din = opcode_addr;
-			1: pc_din = ram_dout[9:0];
+			`PC_DIN_OP:  pc_din = opcode_addr;
+			`PC_DIN_RAM: pc_din = ram_dout[9:0];
 		endcase
 	end
 
@@ -123,19 +139,19 @@ module cpu(
 
 	always_comb begin
 		case(ram_addr_sel)
-			0: ram_addr = pc_dout;
-			1: ram_addr = sp_dout + {2'b0, opcode_offset_8};
-			2: ram_addr = rf_b[9:0] + {5'b0, opcode_offset_5};
-			3: ram_addr = rom_addr;
+			`RAM_ADDR_PC:  ram_addr = pc_dout;
+			`RAM_ADDR_SP:  ram_addr = sp_dout + {2'b0, opcode_offset_8};
+			`RAM_ADDR_RF:  ram_addr = rf_b[9:0] + {5'b0, opcode_offset_5};
+			`RAM_ADDR_ROM: ram_addr = rom_addr;
 		endcase
 	end
 
 	always_comb begin
 		case(ram_din_sel)
-			0: ram_din = rf_a;
-			1: ram_din = {6'b0, pc_dout};
-			2: ram_din = rom_dout;
-			3: ram_din = 0;
+			`RAM_DIN_RF:  ram_din = rf_a;
+			`RAM_DIN_PC:  ram_din = {6'b0, pc_dout};
+			`RAM_DIN_ROM: ram_din = rom_dout;
+			`RAM_DIN_SP:  ram_din = {6'b0, sp_dout};
 		endcase
 	end
 
@@ -188,8 +204,8 @@ module cpu(
 
 	always_comb begin
 		case(sp_sel)
-			0: sp_din = opcode_addr;
-			1: sp_din = rf_a[9:0];
+			`SP_DIN_OP: sp_din = opcode_addr;
+			`SP_DIN_RF: sp_din = rf_a[9:0];
 		endcase
 	end
 
