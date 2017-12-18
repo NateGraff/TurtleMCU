@@ -1,11 +1,11 @@
 
 module rf(
-	input  wire       clk,
-	input  wire       rst_n,
-	input  wire [2:0] addr_a,
-	input  wire [2:0] addr_b,
+	input  wire        clk,
+	input  wire        rst_n,
+	input  wire [2:0]  addr_a,
+	input  wire [2:0]  addr_b,
 	input  wire [15:0] din,
-	input  wire       write,
+	input  wire        write,
 	output reg  [15:0] dout_a,
 	output reg  [15:0] dout_b);
 

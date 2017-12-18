@@ -1,10 +1,10 @@
 
 module ram(
-	input  wire       clk,
-	input  wire       rst_n,
-	input  wire [9:0] addr,
+	input  wire        clk,
+	input  wire        rst_n,
+	input  wire [9:0]  addr,
 	input  wire [15:0] din,
-	input  wire       write,
+	input  wire        write,
 	output reg  [15:0] dout);
 
 	reg [1023:0][15:0] memory;

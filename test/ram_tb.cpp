@@ -8,7 +8,7 @@
 
 const char* TRACE_FILE = "obj_dir/ram_trace.vcd";
 const vluint64_t sim_time = 100;
-const uint8_t ram_size = 64;
+const uint16_t ram_size = 1024;
 
 vluint64_t main_time = 0;
 
@@ -52,7 +52,7 @@ int main(int argc, char ** argv) {
 
 	ram->rst_n = 1;
 
-	uint8_t write_count = 0;
+	uint16_t write_count = 0;
 
 	while(!Verilated::gotFinish() && write_count < ram_size) {
 		// Clear all inputs
@@ -80,7 +80,7 @@ int main(int argc, char ** argv) {
 		main_time++;
 	}
 
-	uint8_t read_count = 0;
+	uint16_t read_count = 0;
 
 	while(!Verilated::gotFinish() && read_count < ram_size) {
 		// Clear all inputs
@@ -95,7 +95,7 @@ int main(int argc, char ** argv) {
 		if(clk == 1) {
 			ram->addr = read_count;
 			ram->eval();
-			assert(ram->dout == (uint8_t) (read_count + 1));
+			assert(ram->dout == (uint16_t) (read_count + 1));
 			read_count++;
 		}
 

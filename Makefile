@@ -2,7 +2,10 @@
 SRC_DIR = src
 TEST_DIR = test
 
-default: units
+default: cpu
+
+cpu: $(SRC_DIR)/*.sv
+	verilator -cc $(SRC_DIR)/cpu.sv -I$(SRC_DIR)
 
 units: rf ram alu pc
 	./obj_dir/Vrf

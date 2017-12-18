@@ -29,6 +29,15 @@ xor  10111 aaa bbb -----
 shr  11000 aaa bbb -----
 shl  11001 aaa bbb -----
 
+reg-reg-offset
+
+     op    a   b   offset
+     5     3   3   5
+     ----- --- --- ------
+
+ldi  11110 aaa bbb 00000
+sti  11111 aaa bbb 00000
+
 reg-imm
 
      op    a   imm
@@ -48,14 +57,14 @@ push 10000 aaa --------
 pop  10001 aaa --------
 in   00110 aaa --------
 out  00111 aaa --------
-clr  11011 aaa --------
+clr  11010 aaa --------
 lsp  11100 aaa --------
 rsp  11101 aaa --------
 
 reg-offset
 
      op    reg offset
-     5     3
+     5     3   8
      ----- --- -------
 
 ld   00100 aaa 0000000
@@ -73,4 +82,4 @@ jc   01010 0000000000 -
 jnc  01011 0000000000 -
 jz   01100 0000000000 -
 jnz  01101 0000000000 -
-lsp  11010 0000000000 -
+lsp  11011 0000000000 -

@@ -2,6 +2,7 @@
 module flags(
 	input wire clk,
 	input wire rst_n,
+	input wire load,
 	input wire carry_in,
 	input wire zero_in,
 	output reg carry_out,
@@ -12,8 +13,10 @@ module flags(
 			carry_out <= 0;
 			zero_out <= 0;
 		end else begin
-			carry_out <= carry_in;
-			zero_out <= zero_in;
+			if(load) begin
+				carry_out <= carry_in;
+				zero_out <= zero_in;
+			end
 		end
 	end
 

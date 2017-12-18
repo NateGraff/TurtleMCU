@@ -47,6 +47,7 @@ int main(int argc, char ** argv) {
 
 	pc->rst_n = 1;
 
+	uint16_t last_count = pc->dout;
 
 	while(!Verilated::gotFinish() && main_time < sim_time) {
 		// Advance the clock

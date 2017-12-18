@@ -1,11 +1,11 @@
 
 module alu(
-	input  wire [2:0] op,
+	input  wire [2:0]  op,
 	input  wire [15:0] arg_a,
 	input  wire [15:0] arg_b,
 	output reg  [15:0] out,
-	output reg        carry,
-	output reg        zero);
+	output reg         carry,
+	output reg         zero);
 
 	typedef enum reg [2:0] {
 		ADD, SUB, AND, OR, NOT, XOR, ROL, ROR

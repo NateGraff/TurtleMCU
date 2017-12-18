@@ -2,6 +2,8 @@
 module sp(
 	input  wire       clk,
 	input  wire       rst_n,
+	input  wire [9:0] din,
+	input  wire       load,
 	input  wire       inc,
 	input  wire       dec,
 	output reg  [9:0] dout);
