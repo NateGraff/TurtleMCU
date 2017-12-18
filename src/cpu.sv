@@ -1,28 +1,5 @@
 
-`define PC_DIN_OP  1'b0
-`define PC_DIN_RAM 1'b1
-
-`define RAM_ADDR_PC  2'b00
-`define RAM_ADDR_SP  2'b01
-`define RAM_ADDR_RF  2'b10
-`define RAM_ADDR_ROM 2'b11
-
-`define RAM_DIN_RF  2'b00
-`define RAM_DIN_PC  2'b01
-`define RAM_DIN_ROM 2'b10
-`define RAM_DIN_SP  2'b11
-
-`define RF_DIN_B    3'b000
-`define RF_DIN_ALU  3'b001
-`define RF_DIN_LOW  3'b010
-`define RF_DIN_HIGH 3'b011
-`define RF_DIN_RAM  3'b100
-`define RF_DIN_IN   3'b101
-`define RF_DIN_SP   3'b110
-`define RF_DIN_ZERO 3'b111
-
-`define SP_DIN_OP  1'b0
-`define SP_DIN_RF 1'b1
+`include "constants.sv"
 
 module cpu(
 	input wire clk,
