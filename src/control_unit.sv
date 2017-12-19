@@ -19,7 +19,7 @@ module control_unit(
 
 	output reg [9:0] rom_addr,
 
-	output reg [1:0] ram_addr_sel,
+	output reg [2:0] ram_addr_sel,
 	output reg [1:0] ram_din_sel,
 	output reg ram_write,
 
@@ -33,18 +33,21 @@ module control_unit(
 
 	output reg output_valid);
 
-	typedef enum reg [1:0] {
-		RESET, LOAD_ROM, FETCH, EXECUTE
+	typedef enum reg [2:0] {
+		RESET, LOAD_ROM, FETCH, EXECUTE, RAM_READ
 	} state_t;
 
 	state_t state;
+
+	wire [4:0] opcode;
+	assign opcode = ram_dout[15:11];
 
 	always_ff @(posedge clk or negedge rst_n) begin
 		if(~rst_n) begin
 			state <= RESET;
 		end else begin
 			case(state)
-				RESET: begin
+				default: begin
 					state <= LOAD_ROM;
 					rom_addr <= 0;
 				end
@@ -58,14 +61,19 @@ module control_unit(
 					state <= EXECUTE;
 				end
 				EXECUTE: begin
+					case(opcode)
+						default:     state <= FETCH;
+						`OPCODE_POP: state <= RAM_READ;
+						`OPCODE_LD:  state <= RAM_READ;
+						`OPCODE_LDI: state <= RAM_READ;
+					endcase
+				end
+				RAM_READ: begin
 					state <= FETCH;
 				end
 			endcase
 		end
 	end
-
-	wire [4:0] opcode;
-	assign opcode = ram_dout[15:11];
 
 	always_comb begin
 		alu_op    = 0;
@@ -91,7 +99,7 @@ module control_unit(
 		output_valid = 0;
 
 		case(state)
-			RESET: begin
+			default: begin
 				
 			end
 			LOAD_ROM: begin
@@ -107,7 +115,6 @@ module control_unit(
 
 				case(opcode)
 					default : begin
-
 					end
 					`OPCODE_MV  : begin
 						rf_din_sel = `RF_DIN_B;
@@ -122,12 +129,10 @@ module control_unit(
 						rf_write = 1;
 					end
 					`OPCODE_LD  : begin
-						ram_addr_sel = `RAM_ADDR_SP;
-						rf_din_sel = `RF_DIN_RAM;
-						rf_write = 1;
+						ram_addr_sel = `RAM_ADDR_SPO;
 					end
 					`OPCODE_ST  : begin
-						ram_addr_sel = `RAM_ADDR_SP;
+						ram_addr_sel = `RAM_ADDR_SPO;
 						ram_write = 1;
 					end
 					`OPCODE_IN  : begin
@@ -176,12 +181,12 @@ module control_unit(
 						sp_inc = 1;
 					end
 					`OPCODE_PUSH: begin
+						ram_addr_sel = `RAM_ADDR_SP;
 						ram_write = 1;
 						sp_dec = 1;
 					end
 					`OPCODE_POP : begin
-						rf_write = 1;
-						rf_din_sel = `RF_DIN_RAM;
+						ram_addr_sel = `RAM_ADDR_SP1;
 						sp_inc = 1;
 					end
 					`OPCODE_ADD : begin
@@ -249,7 +254,6 @@ module control_unit(
 						rf_din_sel = `RF_DIN_SP;
 					end
 					`OPCODE_LDI : begin
-						rf_write = 1;
 						ram_addr_sel = `RAM_ADDR_RF;
 					end
 					`OPCODE_STI : begin
@@ -257,6 +261,10 @@ module control_unit(
 						ram_write = 1;
 					end
 				endcase
+			end
+			RAM_READ: begin
+				rf_write = 1;
+				rf_din_sel = `RF_DIN_RAM;
 			end
 		endcase
 	end

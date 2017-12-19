@@ -28,7 +28,7 @@ module cpu(
 	wire [9:0] rom_addr;
 	wire [15:0] rom_dout;
 
-	wire [1:0] ram_addr_sel;
+	wire [2:0] ram_addr_sel;
 	wire [9:0] ram_addr;
 	wire ram_write;
 	wire [1:0] ram_din_sel;
@@ -93,7 +93,7 @@ module cpu(
 	always_comb begin
 		case(pc_sel)
 			`PC_DIN_OP:  pc_din = opcode_addr;
-			`PC_DIN_RAM: pc_din = ram_dout_last[9:0];
+			`PC_DIN_RAM: pc_din = ram_dout[9:0];
 		endcase
 	end
 
@@ -117,9 +117,18 @@ module cpu(
 	always_comb begin
 		case(ram_addr_sel)
 			`RAM_ADDR_PC:  ram_addr = pc_dout;
-			`RAM_ADDR_SP:  ram_addr = sp_dout + {2'b0, opcode_offset_8};
-			`RAM_ADDR_RF:  ram_addr = rf_b[9:0] + {5'b0, opcode_offset_5};
+			`RAM_ADDR_SP:  ram_addr = sp_dout;
+			`RAM_ADDR_SP1: ram_addr = sp_dout + 1;
+			`RAM_ADDR_SPO: begin
+				// Sign extend for 2's complement
+				ram_addr = sp_dout + {{2{opcode_offset_8[7]}}, opcode_offset_8};
+			end
+			`RAM_ADDR_RF: begin
+				// Sign extend for 2's complement
+				ram_addr = rf_b[9:0] + {{5{opcode_offset_5[4]}}, opcode_offset_5};
+			end
 			`RAM_ADDR_ROM: ram_addr = rom_addr;
+			default:       ram_addr = 0;
 		endcase
 	end
 
@@ -130,15 +139,6 @@ module cpu(
 			`RAM_DIN_ROM: ram_din = rom_dout;
 			`RAM_DIN_SP:  ram_din = {6'b0, sp_dout};
 		endcase
-	end
-
-	reg [15:0] ram_dout_last;
-	always_ff @(posedge clk or negedge rst_n) begin
-		if(~rst_n) begin
-			ram_dout_last <= 0;
-		end else begin
-			ram_dout_last <= ram_dout;
-		end
 	end
 
 	ram ram_i(
@@ -152,9 +152,25 @@ module cpu(
 	wire [7:0] opcode_immed;
 	wire [2:0] opcode_a;
 	wire [2:0] opcode_b;
+	reg [2:0] opcode_a_last;
 	assign opcode_immed = ram_dout[7:0];
-	assign opcode_a     = ram_dout[10:8];
 	assign opcode_b     = ram_dout[7:5];
+
+	always_ff @(posedge clk or negedge rst_n) begin
+		if(~rst_n) begin
+			opcode_a_last <= 0;
+		end else begin
+			opcode_a_last <= opcode_a;
+		end
+	end
+
+	always_comb begin
+		if(rf_din_sel == `RF_DIN_RAM) begin
+			opcode_a = opcode_a_last;
+		end else begin
+			opcode_a = ram_dout[10:8];
+		end
+	end
 
 	always_comb begin
 		case(rf_din_sel)
@@ -162,7 +178,7 @@ module cpu(
 			`RF_DIN_ALU:  rf_din = alu_out;
 			`RF_DIN_LOW:  rf_din = {8'h00, opcode_immed};
 			`RF_DIN_HIGH: rf_din = {opcode_immed, 8'h00};
-			`RF_DIN_RAM:  rf_din = ram_dout_last;
+			`RF_DIN_RAM:  rf_din = ram_dout;
 			`RF_DIN_IN:   rf_din = in_port;
 			`RF_DIN_SP:   rf_din = {6'b0, sp_dout};
 			`RF_DIN_ZERO: rf_din = 0;

@@ -16,16 +16,17 @@ module rom(
 
 	always_comb begin
 		case(addr)
-			10'h0000: dout = {`OPCODE_MVL, `R0, 8'h01};
-			10'h0001: dout = {`OPCODE_MVL, `R1, 8'h02};
-			10'h0002: dout = {`OPCODE_ADD, `R0, `R1, 5'b0};
-			10'h0003: dout = {`OPCODE_MVL, `R2, 8'h03};
-			10'h0004: dout = {`OPCODE_CMP, `R0, `R2, 5'b0};
-			10'h0005: dout = {`OPCODE_JNZ, 10'h0009, 1'b0};
-			10'h0006: dout = {`OPCODE_OUT, `R0, 8'b0};
-			10'h0007: dout = {`OPCODE_ADD, `R2, `R1, 5'b0};
-			10'h0008: dout = {`OPCODE_JMP, 10'h0004, 1'b0};
-			10'h0009: dout = {`OPCODE_JMP, 10'h0009, 1'b0};
+			10'h0000: dout = {`OPCODE_MVL, `R1, 8'h37};
+			10'h0001: dout = {`OPCODE_MVL, `R2, 8'h01};
+			10'h0002: dout = {`OPCODE_MVL, `R3, 8'h55};
+			10'h0003: dout = {`OPCODE_STI, `R1, `R3, 5'h1F};
+			10'h0004: dout = {`OPCODE_ADD, `R1, `R2, 5'b0};
+			10'h0005: dout = {`OPCODE_STI, `R1, `R3, 5'h01};
+			10'h0006: dout = {`OPCODE_LDI, `R4, `R3, 5'h1F};
+			10'h0007: dout = {`OPCODE_OUT, `R4, 8'b0};
+			10'h0008: dout = {`OPCODE_LDI, `R4, `R3, 5'h01};
+			10'h0009: dout = {`OPCODE_OUT, `R4, 8'b0};
+			10'h000a: dout = {`OPCODE_JMP, 10'h000a, 1'b0};
 			default: dout = 0;
 		endcase
 	end

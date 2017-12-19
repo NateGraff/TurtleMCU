@@ -35,10 +35,12 @@
 `define PC_DIN_OP  1'b0
 `define PC_DIN_RAM 1'b1
 
-`define RAM_ADDR_PC  2'b00
-`define RAM_ADDR_SP  2'b01
-`define RAM_ADDR_RF  2'b10
-`define RAM_ADDR_ROM 2'b11
+`define RAM_ADDR_PC  3'b000
+`define RAM_ADDR_SP  3'b001
+`define RAM_ADDR_SP1 3'b010
+`define RAM_ADDR_SPO 3'b011
+`define RAM_ADDR_RF  3'b100
+`define RAM_ADDR_ROM 3'b101
 
 `define RAM_DIN_RF  2'b00
 `define RAM_DIN_PC  2'b01

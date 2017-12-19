@@ -10,7 +10,7 @@ module sp(
 
 	always_ff @(posedge clk or negedge rst_n) begin
 		if(~rst_n) begin
-			dout <= 0;
+			dout <= 10'h3FF;
 		end else begin
 			if(inc) begin
 				dout <= dout + 1;
