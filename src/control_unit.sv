@@ -34,7 +34,7 @@ module control_unit(
 	output reg output_valid);
 
 	typedef enum reg [2:0] {
-		RESET, LOAD_ROM, FETCH, EXECUTE, RAM_READ
+		RESET, LOAD_ROM, FETCH, EXECUTE, RAM_READ_RF, RAM_READ_PC
 	} state_t;
 
 	state_t state;
@@ -63,12 +63,16 @@ module control_unit(
 				EXECUTE: begin
 					case(opcode)
 						default:     state <= FETCH;
-						`OPCODE_POP: state <= RAM_READ;
-						`OPCODE_LD:  state <= RAM_READ;
-						`OPCODE_LDI: state <= RAM_READ;
+						`OPCODE_POP: state <= RAM_READ_RF;
+						`OPCODE_LD:  state <= RAM_READ_RF;
+						`OPCODE_LDI: state <= RAM_READ_RF;
+						`OPCODE_RET: state <= RAM_READ_PC;
 					endcase
 				end
-				RAM_READ: begin
+				RAM_READ_RF: begin
+					state <= EXECUTE;
+				end
+				RAM_READ_PC: begin
 					state <= FETCH;
 				end
 			endcase
@@ -171,13 +175,14 @@ module control_unit(
 					end
 					`OPCODE_CALL: begin
 						pc_load = 1;
+						pc_sel = `PC_DIN_OP;
 						sp_dec = 1;
-						ram_din_sel = `RAM_DIN_SP;
+						ram_din_sel = `RAM_DIN_PC;
+						ram_addr_sel = `RAM_ADDR_SP;
 						ram_write = 1;
 					end
 					`OPCODE_RET : begin
-						pc_load = 1;
-						pc_sel = `PC_DIN_RAM;
+						ram_addr_sel = `RAM_ADDR_SP1;
 						sp_inc = 1;
 					end
 					`OPCODE_PUSH: begin
@@ -262,9 +267,13 @@ module control_unit(
 					end
 				endcase
 			end
-			RAM_READ: begin
+			RAM_READ_RF: begin
 				rf_write = 1;
 				rf_din_sel = `RF_DIN_RAM;
+			end
+			RAM_READ_PC: begin
+				pc_load = 1;
+				pc_sel = `PC_DIN_RAM;
 			end
 		endcase
 	end

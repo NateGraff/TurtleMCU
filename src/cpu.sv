@@ -135,7 +135,7 @@ module cpu(
 	always_comb begin
 		case(ram_din_sel)
 			`RAM_DIN_RF:  ram_din = rf_a;
-			`RAM_DIN_PC:  ram_din = {6'b0, pc_dout};
+			`RAM_DIN_PC:  ram_din = {6'b0, pc_dout} + 1;
 			`RAM_DIN_ROM: ram_din = rom_dout;
 			`RAM_DIN_SP:  ram_din = {6'b0, sp_dout};
 		endcase
