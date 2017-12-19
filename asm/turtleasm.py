@@ -178,7 +178,7 @@ module rom(
 				address = 0
 
 				# assemble
-				for parsed in parsedSource:
+				for (parsed, lineno) in zip(parsedSource, range(1, len(parsedSource) + 1)):
 					if(parsed['type'] == 'directive'):
 						if(parsed['directive'] == '.org'):
 							address = int(parsed['address'], 16)
@@ -214,7 +214,7 @@ module rom(
 								offset = int(parsed['offset'])
 
 								if(abs(offset) > (2**7)-1):
-									raise Exception("Offset {} too large".format(offset))
+									raise Exception("Offset {} too large at line {}".format(offset, lineno))
 
 								offset = bin(0xFF & offset)[2:]
 							else:
@@ -236,7 +236,7 @@ module rom(
 								offset = int(parsed['offset'])
 
 								if(abs(offset) > (2**4)-1):
-									raise Exception("Offset {} too large".format(offset))
+									raise Exception("Offset {} too large at line {}".format(offset, lineno))
 
 								offset = bin(0x1F & offset)[2:]
 							else:
@@ -246,7 +246,7 @@ module rom(
 
 						elif(parsed['type'] == 'tag'):
 							if(not parsed['tagref'] in tags.keys()):
-								raise Exception("Unknown tag {}", parsed['tagref'])
+								raise Exception("Unknown tag {} at line {}".format(parsed['tagref'], lineno))
 
 							opdefine = tag_defines[parsed['opcode']]
 							tagaddr = tags[parsed['tagref']]
