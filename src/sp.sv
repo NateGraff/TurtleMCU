@@ -16,6 +16,8 @@ module sp(
 				dout <= dout + 1;
 			end else if(dec) begin
 				dout <= dout - 1;
+			end else if(load) begin
+				dout <= din;
 			end
 		end
 	end
