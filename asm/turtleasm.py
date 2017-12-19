@@ -9,8 +9,8 @@ register = Or([CaselessKeyword(k) for k in ['r0','r1','r2','r3','r4','r5','r6','
 sp = CaselessKeyword('sp')
 immediate = Combine('0x' + Word(alphanums, max=2))
 address = Combine('0x' + Word(alphanums, max=3))
-regaddr = Suppress('[') + register + Combine(Or(['+','-']) + Word(nums)) + Suppress(']')
-spaddr = Suppress('[' + sp) + Combine(Or(['+','-']) + Word(nums)) + Suppress(']')
+regaddr = Suppress('[') + register + Optional(Combine(Or(['+','-']) + Word(nums))).setResultsName('offset') + Suppress(']')
+spaddr = Suppress('[' + sp) + Optional(Combine(Or(['+','-']) + Word(nums))).setResultsName('offset') + Suppress(']')
 
 org = CaselessKeyword('.org') + Suppress(White()) + address.setResultsName('address')
 
@@ -57,9 +57,9 @@ opcode_addr = Or([CaselessKeyword(k) for k in ['lsp']]).setParseAction(setTypeAd
 instruction_oponly = opcode_oponly.setResultsName('opcode')
 instruction_reg = opcode_reg.setResultsName('opcode') + Suppress(White()) + register.setResultsName('dest')
 instruction_regimm = opcode_regimm.setResultsName('opcode') + Suppress(White()) + register.setResultsName('dest') + Suppress(Optional(White()) + ',' + Optional(White())) + immediate.setResultsName('src')
-instruction_regoffset = opcode_regoffset.setResultsName('opcode') + Suppress(White()) + register.setResultsName('dest') + Suppress(Optional(White()) + ',' + Optional(White())) + spaddr.setResultsName('src')
+instruction_regoffset = opcode_regoffset.setResultsName('opcode') + Suppress(White()) + register.setResultsName('dest') + Suppress(Optional(White()) + ',' + Optional(White())) + spaddr
 instruction_regreg = opcode_regreg.setResultsName('opcode') + Suppress(White()) + register.setResultsName('dest') + Suppress(Optional(White()) + ',' + Optional(White())) + register.setResultsName('src')
-instruction_regregoffset = opcode_regregoffset.setResultsName('opcode') + Suppress(White()) + register.setResultsName('dest') + Suppress(Optional(White()) + ',' + Optional(White())) + regaddr.setResultsName('src')
+instruction_regregoffset = opcode_regregoffset.setResultsName('opcode') + Suppress(White()) + register.setResultsName('dest') + Suppress(Optional(White()) + ',' + Optional(White())) + regaddr
 instruction_tag = opcode_tag.setResultsName('opcode') + Suppress(White()) + tagref.setResultsName('tagref')
 instruction_addr = opcode_addr.setResultsName('opcode') + Suppress(White()) + address.setResultsName('address')
 instruction = Or([instruction_oponly,instruction_reg,instruction_regimm,instruction_regoffset,instruction_regreg,instruction_regregoffset,instruction_tag,instruction_addr])
@@ -209,8 +209,11 @@ module rom(
 						elif(parsed['type'] == 'regoffset'):
 							opdefine = regoffset_defines[parsed['opcode']]
 							destdefine = register_defines[parsed['dest']]
-							offset = int(parsed['src'])
-							rom.write("{}, {}, 8'b{:08b}".format(opdefine, destdefine, offset))
+							if('offset' in parsed.keys()):
+								offset = bin(0xFF & int(parsed['offset']))[2:]
+							else:
+								offset = bin(0)[2:]
+							rom.write("{}, {}, 8'b{}".format(opdefine, destdefine, offset))
 
 						elif(parsed['type'] == 'regreg'):
 							opdefine = regreg_defines[parsed['opcode']]
@@ -220,9 +223,12 @@ module rom(
 						elif(parsed['type'] == 'regregoffset'):
 							opdefine = regregoffset_defines[parsed['opcode']]
 							destdefine = register_defines[parsed['dest']]
-							srcdefine = reg_defines[parsed['src'][0]]
-							offset = int(reg_defines[parsed['src'][1]])
-							rom.write("{}, {}, {}, 5'h{:05b}}".format(opdefine, destdefine, srcdefine, offset))
+							srcdefine = register_defines[parsed['src'][0]]
+							if('offset' in parsed.keys()):
+								offset = bin(0xFF & int(parsed['offset']))[2:]
+							else:
+								offset = bin(0)[2:]
+							rom.write("{}, {}, {}, 5'b{}".format(opdefine, destdefine, srcdefine, offset))
 
 						elif(parsed['type'] == 'tag'):
 							if(not parsed['tagref'] in tags.keys()):
@@ -234,7 +240,7 @@ module rom(
 
 						elif(parsed['type'] == 'addr'):
 							opdefine = addr_defines[parsed['opcode']]
-							addr = int(parsed['addr'], 16)
+							addr = int(parsed['address'], 16)
 							rom.write("{}, 10'h{:03x}, 1'b0".format(opdefine, addr))
 
 						rom.write("};\n")
