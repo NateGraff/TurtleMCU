@@ -37,4 +37,7 @@ pc: $(SRC_DIR)/pc.sv $(TEST_DIR)/pc_tb.cpp
 	$(MAKE) -j -C obj_dir/ -f Vpc.mk
 
 clean:
-	rm -r obj_dir
+	rm -rf obj_dir
+	rm -f src/rom.sv
+	rm -f asm/rom.sv
+	rm -rf asm/__pycache__
