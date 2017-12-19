@@ -67,3 +67,12 @@
 `define ALU_XOR 3'b101
 `define ALU_SHL 3'b110
 `define ALU_SHR 3'b111
+
+`define R0 3'b000
+`define R1 3'b001
+`define R2 3'b010
+`define R3 3'b011
+`define R4 3'b100
+`define R5 3'b101
+`define R6 3'b110
+`define R7 3'b111
