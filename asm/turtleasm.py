@@ -213,7 +213,7 @@ module rom(
 							if('offset' in parsed.keys()):
 								offset = int(parsed['offset'])
 
-								if(abs(offset) > (2**8)-1):
+								if(abs(offset) > (2**7)-1):
 									raise Exception("Offset {} too large".format(offset))
 
 								offset = bin(0xFF & offset)[2:]
