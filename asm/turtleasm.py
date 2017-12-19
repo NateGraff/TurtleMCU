@@ -3,16 +3,16 @@
 from pyparsing import * 
 
 comment = '#' + restOfLine
-tag = Word(alphanums).setResultsName('tag') + Suppress(':')
+tag = Word(alphanums).setResultsName('tag') + ':'
 tagref = Word(alphanums)
 register = Or([CaselessKeyword(k) for k in ['r0','r1','r2','r3','r4','r5','r6','r7']])
 sp = CaselessKeyword('sp')
 immediate = Combine('0x' + Word(alphanums, max=2))
 address = Combine('0x' + Word(alphanums, max=3))
-regaddr = Suppress('[') + register + Optional(Combine(Or(['+','-']) + Word(nums))).setResultsName('offset') + Suppress(']')
-spaddr = Suppress('[' + sp) + Optional(Combine(Or(['+','-']) + Word(nums))).setResultsName('offset') + Suppress(']')
+regaddr = '[' + register.setResultsName('src') + Optional(Combine(Or(['+','-']) + Word(nums))).setResultsName('offset') + ']'
+spaddr = '[' + sp + Optional(Combine(Or(['+','-']) + Word(nums))).setResultsName('offset') + ']'
 
-org = CaselessKeyword('.org') + Suppress(White()) + address.setResultsName('address')
+org = CaselessKeyword('.org') + White() + address.setResultsName('address')
 
 def setTypeIgnore(toks):
 	toks['type'] = 'ignore'
@@ -55,20 +55,20 @@ opcode_tag = Or([CaselessKeyword(k) for k in ['call','jmp','jc','jnc','jz','jnz'
 opcode_addr = Or([CaselessKeyword(k) for k in ['lsp']]).setParseAction(setTypeAddr)
 
 instruction_oponly = opcode_oponly.setResultsName('opcode')
-instruction_reg = opcode_reg.setResultsName('opcode') + Suppress(White()) + register.setResultsName('dest')
-instruction_regimm = opcode_regimm.setResultsName('opcode') + Suppress(White()) + register.setResultsName('dest') + Suppress(Optional(White()) + ',' + Optional(White())) + immediate.setResultsName('src')
-instruction_regoffset = opcode_regoffset.setResultsName('opcode') + Suppress(White()) + register.setResultsName('dest') + Suppress(Optional(White()) + ',' + Optional(White())) + spaddr
-instruction_regreg = opcode_regreg.setResultsName('opcode') + Suppress(White()) + register.setResultsName('dest') + Suppress(Optional(White()) + ',' + Optional(White())) + register.setResultsName('src')
-instruction_regregoffset = opcode_regregoffset.setResultsName('opcode') + Suppress(White()) + register.setResultsName('dest') + Suppress(Optional(White()) + ',' + Optional(White())) + regaddr
-instruction_tag = opcode_tag.setResultsName('opcode') + Suppress(White()) + tagref.setResultsName('tagref')
-instruction_addr = opcode_addr.setResultsName('opcode') + Suppress(White()) + address.setResultsName('address')
+instruction_reg = opcode_reg.setResultsName('opcode') + White() + register.setResultsName('dest')
+instruction_regimm = opcode_regimm.setResultsName('opcode') + White() + register.setResultsName('dest') + Optional(White()) + ',' + Optional(White()) + immediate.setResultsName('src')
+instruction_regoffset = opcode_regoffset.setResultsName('opcode') + White() + register.setResultsName('dest') + Optional(White()) + ',' + Optional(White()) + spaddr
+instruction_regreg = opcode_regreg.setResultsName('opcode') + White() + register.setResultsName('dest') + Optional(White()) + ',' + Optional(White()) + register.setResultsName('src')
+instruction_regregoffset = opcode_regregoffset.setResultsName('opcode') + White() + register.setResultsName('dest') + Optional(White()) + ',' + Optional(White()) + regaddr
+instruction_tag = opcode_tag.setResultsName('opcode') + White() + tagref.setResultsName('tagref')
+instruction_addr = opcode_addr.setResultsName('opcode') + White() + address.setResultsName('address')
 instruction = Or([instruction_oponly,instruction_reg,instruction_regimm,instruction_regoffset,instruction_regreg,instruction_regregoffset,instruction_tag,instruction_addr])
 
-blankline = Suppress(White() + LineEnd()).setParseAction(setTypeIgnore)
-commentline = Suppress(Optional(White()) + comment).setParseAction(setTypeIgnore)
-untaggedline = Suppress(Optional(White())) + instruction + Suppress(Optional(White()) + Or([comment, LineEnd()]))
+blankline = (White() + LineEnd()).setParseAction(setTypeIgnore)
+commentline = (Optional(White()) + comment).setParseAction(setTypeIgnore)
+untaggedline = Optional(White()) + instruction + Optional(White()) + Or([comment, LineEnd()])
 taggedline = tag + untaggedline
-directiveline = Or([org]).setResultsName('directive') + Suppress(Optional(White()) + LineEnd()).setParseAction(setTypeDirective)
+directiveline = (Or([org]).setResultsName('directive') + Optional(White()) + LineEnd()).setParseAction(setTypeDirective)
 line = Or([blankline,commentline,untaggedline,taggedline,directiveline])
 
 register_defines = {
@@ -209,10 +209,17 @@ module rom(
 						elif(parsed['type'] == 'regoffset'):
 							opdefine = regoffset_defines[parsed['opcode']]
 							destdefine = register_defines[parsed['dest']]
+
 							if('offset' in parsed.keys()):
-								offset = bin(0xFF & int(parsed['offset']))[2:]
+								offset = int(parsed['offset'])
+
+								if(abs(offset) > (2**8)-1):
+									raise Exception("Offset {} too large".format(offset))
+
+								offset = bin(0xFF & offset)[2:]
 							else:
-								offset = bin(0)[2:]
+								offset = '0'
+
 							rom.write("{}, {}, 8'b{}".format(opdefine, destdefine, offset))
 
 						elif(parsed['type'] == 'regreg'):
@@ -223,11 +230,18 @@ module rom(
 						elif(parsed['type'] == 'regregoffset'):
 							opdefine = regregoffset_defines[parsed['opcode']]
 							destdefine = register_defines[parsed['dest']]
-							srcdefine = register_defines[parsed['src'][0]]
+							srcdefine = register_defines[parsed['src']]
+
 							if('offset' in parsed.keys()):
-								offset = bin(0xFF & int(parsed['offset']))[2:]
+								offset = int(parsed['offset'])
+
+								if(abs(offset) > (2**4)-1):
+									raise Exception("Offset {} too large".format(offset))
+
+								offset = bin(0x1F & offset)[2:]
 							else:
-								offset = bin(0)[2:]
+								offset = '0'
+
 							rom.write("{}, {}, {}, 5'b{}".format(opdefine, destdefine, srcdefine, offset))
 
 						elif(parsed['type'] == 'tag'):
