@@ -22,7 +22,13 @@ module alu(
 			end
 			`ALU_SUB: begin
 				out = arg_a - arg_b;
-				carry = (arg_b > arg_a);
+
+				if(~arg_a[15] & arg_b[15])
+					carry = 0;
+				else if(arg_a[15] & ~arg_b[15])
+					carry = 1;
+				else
+					carry = arg_b > arg_a;
 			end
 			`ALU_AND: begin
 				out = arg_a & arg_b;
