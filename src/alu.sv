@@ -37,10 +37,10 @@ module alu(
 				out = arg_a ^ arg_b;
 			end
 			`ALU_SHL: begin
-				out = (arg_a << arg_b) | (arg_a >> (15 - arg_b));
+				out = (arg_a << arg_b);
 			end
 			`ALU_SHR: begin
-				out = (arg_a >> arg_b) | (arg_a << (15 - arg_b));
+				out = (arg_a >> arg_b);
 			end
 		endcase
 
