@@ -277,6 +277,9 @@ done1p:	shl r1, r2
 		clr r4
 		clr r5
 		
+		clr r1
+		mvl r1, 0x01
+		out r1
 		out r0
 		clr r0
 
