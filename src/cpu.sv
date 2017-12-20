@@ -5,6 +5,8 @@ module cpu(
 	input wire clk,
 	input wire rst_n,
 	input wire [15:0] in_port,
+	input wire input_valid,
+	output reg input_ready,
 	output reg [15:0] out_port,
 	output reg output_valid);
 
@@ -53,6 +55,8 @@ module cpu(
 		.ram_dout(ram_dout),
 		.flag_c(flag_c),
 		.flag_z(flag_z),
+		.input_valid(input_valid),
+		.input_ready(input_ready),
 		.alu_op(alu_op),
 		.flags_load(flags_load),
 		.pc_load(pc_load),

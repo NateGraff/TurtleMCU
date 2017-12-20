@@ -58,6 +58,13 @@ int main(int argc, char ** argv) {
 		tfp->dump(main_time);
 
 		if(clk == 1) {
+			if(cpu->input_ready) {
+				cpu->in_port = 0x00AA;
+				cpu->input_valid = 1;
+			} else {
+				cpu->input_valid = 0;
+			}
+
 			if(cpu->output_valid == 1) {
 				printf("time: %lu ns output: 0x%04X\n", main_time, cpu->out_port);
 			}

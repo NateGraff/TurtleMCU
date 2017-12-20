@@ -9,6 +9,9 @@ module control_unit(
 	input wire flag_c,
 	input wire flag_z,
 
+	input wire input_valid,
+	output reg input_ready,
+
 	output reg [2:0] alu_op,
 
 	output reg flags_load,
@@ -34,7 +37,7 @@ module control_unit(
 	output reg output_valid);
 
 	typedef enum reg [2:0] {
-		RESET, LOAD_ROM, FETCH, EXECUTE, RAM_READ_RF, RAM_READ_PC
+		RESET, LOAD_ROM, FETCH, EXECUTE, RAM_READ_RF, RAM_READ_PC, INPUT
 	} state_t;
 
 	state_t state;
@@ -67,6 +70,7 @@ module control_unit(
 						`OPCODE_LD:  state <= RAM_READ_RF;
 						`OPCODE_LDI: state <= RAM_READ_RF;
 						`OPCODE_RET: state <= RAM_READ_PC;
+						`OPCODE_IN:  state <= INPUT;
 					endcase
 				end
 				RAM_READ_RF: begin
@@ -75,12 +79,19 @@ module control_unit(
 				RAM_READ_PC: begin
 					state <= FETCH;
 				end
+				INPUT: begin
+					if(input_valid) begin
+						state <= FETCH;
+					end
+				end
 			endcase
 		end
 	end
 
 	always_comb begin
 		alu_op    = 0;
+
+		input_ready = 0;
 
 		flags_load = 0;
 
@@ -140,8 +151,7 @@ module control_unit(
 						ram_write = 1;
 					end
 					`OPCODE_IN  : begin
-						rf_din_sel = `RF_DIN_IN;
-						rf_write = `RF_WRITE_FULL;
+						input_ready = 1;
 					end
 					`OPCODE_OUT : begin
 						output_valid = 1;
@@ -274,6 +284,11 @@ module control_unit(
 			RAM_READ_PC: begin
 				pc_load = 1;
 				pc_sel = `PC_DIN_RAM;
+			end
+			INPUT: begin
+				input_ready = 1;
+				rf_write = `RF_WRITE_FULL;
+				rf_din_sel = `RF_DIN_IN;
 			end
 		endcase
 	end
