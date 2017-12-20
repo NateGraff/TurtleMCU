@@ -10,7 +10,7 @@ rom: $(ASM_DIR)/test.s
 	cp $(ASM_DIR)/rom.sv $(SRC_DIR)/rom.sv
 
 cpu: rom $(SRC_DIR)/*.sv $(TEST_DIR)/cpu_tb.cpp
-	verilator -cc $(SRC_DIR)/cpu.sv -I$(SRC_DIR) --trace --exe $(TEST_DIR)/cpu_tb.cpp
+	verilator -cc $(SRC_DIR)/cpu.sv -I$(SRC_DIR) --trace --trace-structs --exe $(TEST_DIR)/cpu_tb.cpp
 	$(MAKE) -j -C obj_dir/ -f Vcpu.mk
 	./obj_dir/Vcpu
 
