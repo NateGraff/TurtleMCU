@@ -24,7 +24,7 @@ module control_unit(
 	output reg ram_write,
 
 	output reg [2:0] rf_din_sel,
-	output reg rf_write,
+	output reg [1:0] rf_write,
 
 	output reg sp_load,
 	output reg sp_inc,
@@ -93,7 +93,7 @@ module control_unit(
 		ram_write    = 0;
 
 		rf_din_sel = `RF_DIN_B;
-		rf_write   = 0;
+		rf_write   = `RF_WRITE_OFF;
 
 		sp_load = 0;
 		sp_inc  = 0;
@@ -122,15 +122,15 @@ module control_unit(
 					end
 					`OPCODE_MV  : begin
 						rf_din_sel = `RF_DIN_B;
-						rf_write = 1;
+						rf_write = `RF_WRITE_FULL;
 					end
 					`OPCODE_MVH : begin
 						rf_din_sel = `RF_DIN_HIGH;
-						rf_write = 1;
+						rf_write = `RF_WRITE_HIGH;
 					end
 					`OPCODE_MVL : begin
 						rf_din_sel = `RF_DIN_LOW;
-						rf_write = 1;
+						rf_write = `RF_WRITE_LOW;
 					end
 					`OPCODE_LD  : begin
 						ram_addr_sel = `RAM_ADDR_SPO;
@@ -141,7 +141,7 @@ module control_unit(
 					end
 					`OPCODE_IN  : begin
 						rf_din_sel = `RF_DIN_IN;
-						rf_write = 1;
+						rf_write = `RF_WRITE_FULL;
 					end
 					`OPCODE_OUT : begin
 						output_valid = 1;
@@ -196,54 +196,54 @@ module control_unit(
 					end
 					`OPCODE_ADD : begin
 						alu_op = `ALU_ADD;
-						rf_write = 1;
+						rf_write = `RF_WRITE_FULL;
 						rf_din_sel = `RF_DIN_ALU;
 						flags_load = 1;
 					end
 					`OPCODE_SUB : begin
 						alu_op = `ALU_SUB;
-						rf_write = 1;
+						rf_write = `RF_WRITE_FULL;
 						rf_din_sel = `RF_DIN_ALU;
 						flags_load = 1;
 					end
 					`OPCODE_AND : begin
 						alu_op = `ALU_AND;
-						rf_write = 1;
+						rf_write = `RF_WRITE_FULL;
 						rf_din_sel = `RF_DIN_ALU;
 						flags_load = 1;
 					end
 					`OPCODE_OR  : begin
 						alu_op = `ALU_OR;
-						rf_write = 1;
+						rf_write = `RF_WRITE_FULL;
 						rf_din_sel = `RF_DIN_ALU;
 						flags_load = 1;
 					end
 					`OPCODE_NOT : begin
 						alu_op = `ALU_NOT;
-						rf_write = 1;
+						rf_write = `RF_WRITE_FULL;
 						rf_din_sel = `RF_DIN_ALU;
 						flags_load = 1;
 					end
 					`OPCODE_XOR : begin
 						alu_op = `ALU_XOR;
-						rf_write = 1;
+						rf_write = `RF_WRITE_FULL;
 						rf_din_sel = `RF_DIN_ALU;
 						flags_load = 1;
 					end
 					`OPCODE_SHR : begin
 						alu_op = `ALU_SHR;
-						rf_write = 1;
+						rf_write = `RF_WRITE_FULL;
 						rf_din_sel = `RF_DIN_ALU;
 						flags_load = 1;
 					end
 					`OPCODE_SHL : begin
 						alu_op = `ALU_SHL;
-						rf_write = 1;
+						rf_write = `RF_WRITE_FULL;
 						rf_din_sel = `RF_DIN_ALU;
 						flags_load = 1;
 					end
 					`OPCODE_CLR : begin
-						rf_write = 1;
+						rf_write = `RF_WRITE_FULL;
 						rf_din_sel = `RF_DIN_ZERO;
 					end
 					`OPCODE_LSPA: begin
@@ -255,7 +255,7 @@ module control_unit(
 						sp_sel = `SP_DIN_RF;
 					end
 					`OPCODE_RSP : begin
-						rf_write = 1;
+						rf_write = `RF_WRITE_FULL;
 						rf_din_sel = `RF_DIN_SP;
 					end
 					`OPCODE_LDI : begin
@@ -268,7 +268,7 @@ module control_unit(
 				endcase
 			end
 			RAM_READ_RF: begin
-				rf_write = 1;
+				rf_write = `RF_WRITE_FULL;
 				rf_din_sel = `RF_DIN_RAM;
 			end
 			RAM_READ_PC: begin

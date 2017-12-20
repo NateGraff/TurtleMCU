@@ -36,7 +36,7 @@ module cpu(
 
 	wire [2:0] rf_din_sel;
 	wire [15:0] rf_din;
-	wire rf_write;
+	wire [1:0] rf_write;
 	wire [15:0] rf_a;
 	wire [15:0] rf_b;
 

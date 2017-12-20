@@ -47,6 +47,11 @@
 `define RAM_DIN_ROM 2'b10
 `define RAM_DIN_SP  2'b11
 
+`define RF_WRITE_OFF  2'b00
+`define RF_WRITE_FULL 2'b01
+`define RF_WRITE_HIGH 2'b10
+`define RF_WRITE_LOW  2'b11
+
 `define RF_DIN_B    3'b000
 `define RF_DIN_ALU  3'b001
 `define RF_DIN_LOW  3'b010
