@@ -41,11 +41,15 @@ always_comb begin
 				if(parsed['type'] == 'directive'):
 					if(parsed['directive'] == '.org'):
 						address = int(parsed['address'], 16)
-					if(parsed['directive'] == '.string'):
+					elif(parsed['directive'] == '.string'):
 						tags[parsed['stringtag']] = address
 						address += len(parsed['stringcontent']) + 1
-					if(parsed['directive'] == '.ldtag'):
+					elif(parsed['directive'] == '.ldtag'):
 						address += 2
+					elif(parsed['directive'] == '.resv'):
+						if('resvtag' in parsed.keys()):
+							tags[parsed['resvtag']] = address
+						address += int(parsed['size'])
 					continue
 
 				if('tag' in parsed.keys()):
@@ -53,6 +57,7 @@ always_comb begin
 
 				if(parsed['type'] != 'ignore'):
 					address += 1
+
 
 			# assemble
 			address = 0
@@ -94,6 +99,9 @@ always_comb begin
 						rom.write("`OPCODE_MVL, {}, 8'h{:02x}".format(destdefine, 0xFF & tagaddr))
 						rom.write("};\n")
 						address += 1
+
+					if(parsed['directive'] == '.resv'):
+						address += int(parsed['size'])
 
 				elif(parsed['type'] == 'ignore'):
 					pass

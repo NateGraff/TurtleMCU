@@ -14,6 +14,7 @@ spaddr = '[' + sp + Optional(Combine(Or(['+','-']) + Word(nums))).setResultsName
 org = CaselessKeyword('.org') + White() + address.setResultsName('address')
 string = CaselessKeyword('.string') + White() + Word(alphanums).setResultsName('stringtag') + White() + quotedString.addParseAction(removeQuotes).setResultsName('stringcontent')
 ldtag = CaselessKeyword('.ldtag') + White() + register.setResultsName('dest') + Optional(White()) + ',' + Optional(White()) + tagref.setResultsName('tagref')
+resv = CaselessKeyword('.resv') + White() + Optional(Word(alphanums)).setResultsName('resvtag') + White() + Word(nums).setResultsName('size')
 
 def setTypeIgnore(toks):
 	toks['type'] = 'ignore'
@@ -69,5 +70,5 @@ blankline = (White() + LineEnd()).setParseAction(setTypeIgnore)
 commentline = (Optional(White()) + comment).setParseAction(setTypeIgnore)
 untaggedline = Optional(White()) + instruction + Optional(White()) + Or([comment, LineEnd()])
 taggedline = tag + untaggedline
-directiveline = (Or([org,string,ldtag]).setResultsName('directive') + Optional(White()) + LineEnd()).setParseAction(setTypeDirective)
+directiveline = (Or([org,string,ldtag,resv]).setResultsName('directive') + Optional(White()) + LineEnd()).setParseAction(setTypeDirective)
 line = Or([blankline,commentline,untaggedline,taggedline,directiveline])
