@@ -2,6 +2,7 @@
 SRC_DIR = src
 TEST_DIR = test
 ASM_DIR = asm
+DEBUGGER_DIR = debugger
 
 default: cpu
 
@@ -11,6 +12,15 @@ rom: $(ASM_DIR)/test.s
 
 cpu: rom $(SRC_DIR)/*.sv $(TEST_DIR)/cpu_tb.cpp
 	verilator -cc $(SRC_DIR)/cpu.sv -I$(SRC_DIR) --trace --trace-structs --exe $(TEST_DIR)/cpu_tb.cpp
+	$(MAKE) -j -C obj_dir/ -f Vcpu.mk
+	./obj_dir/Vcpu
+
+DEBUG_SRC_C = $(DEBUGGER_DIR)/*.cpp
+#DEBUG_SRC_H = $(DEBUGGER_DIR)/*.h
+DEBUG_SRC = $(DEBUG_SRC_C)
+
+debugger: rom $(SRC_DIR)/*.sv $(DEBUG_SRC)
+	verilator -cc $(SRC_DIR)/cpu.sv -I$(SRC_DIR) -O0 --exe $(DEBUG_SRC_C)
 	$(MAKE) -j -C obj_dir/ -f Vcpu.mk
 	./obj_dir/Vcpu
 

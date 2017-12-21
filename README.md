@@ -15,6 +15,7 @@ As it stands, there are now a number of components to the project:
 - A 16-bit von Neumann architecture microprocessor written in SystemVerilog, heavily inspired by the RAT Microprocessor created by Dr. Bryan Mealy for the Cal Poly SLO Computer Engineering program.
 - A very simple instruction set architecture for the microprocessor which fits in a fixed 16-bit word length.
 - An assembler for the TurtleMCU assembly language written in Python 3 using pyparsing
+- An interactive debugger written in C++ using the Verilator simulation of the CPU.
 - Some (very incomplete) verification unit tests of the individual modules of the CPU using Verilator
 
 ## Software Requirements
