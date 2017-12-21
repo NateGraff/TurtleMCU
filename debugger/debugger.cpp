@@ -5,6 +5,7 @@
 #include "../obj_dir/Vcpu_pc.h"
 #include "../obj_dir/Vcpu_rf.h"
 #include "../obj_dir/Vcpu_sp.h"
+#include "../obj_dir/Vcpu_ram.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -30,6 +31,10 @@ uint16_t getPC(Vcpu * cpu) {
 
 void getRegisters(Vcpu * cpu, uint16_t * registers) {
 	memcpy(registers, cpu->__PVT__cpu->__PVT__rf_i->__PVT__registers, 8 * sizeof(uint16_t));
+}
+
+void getRAM(Vcpu * cpu, uint16_t * ram) {
+	memcpy(ram, cpu->__PVT__cpu->__PVT__ram_i->__PVT__memory, 1024 * sizeof(uint16_t));
 }
 
 uint16_t getSP(Vcpu * cpu) {
@@ -65,6 +70,9 @@ int main(int argc, char ** argv) {
 	cpu->rst_n = 1;
 
 	int quit = 0;
+	uint16_t ram_window_start = 0x000;
+	uint16_t ram_window_end = 0x80;
+
 	while(!Verilated::gotFinish() && !quit) {
 		// Advance the clock
 		clk = !clk;
@@ -74,7 +82,13 @@ int main(int argc, char ** argv) {
 		cpu->eval();
 
 		if(clk == 1 && getState(cpu) == 0b011) {
+			// clear terminal
 			printf("\033[2J\033[1;1H");
+
+			// print registers
+			printf("---------------------------------------\n");
+			printf("Registers\n");
+			printf("---------------------------------------\n");
 			printf("pc = %03x, sp = %03x\n", getPC(cpu), getSP(cpu));
 			
 			uint16_t registers[8];
@@ -88,7 +102,24 @@ int main(int argc, char ** argv) {
 				printf("r%d = %04x ", i+4, registers[4+i]);
 			}
 			printf("\n");
-			printf("(n)ext, (q)uit: ");
+
+			// print ram
+			printf("---------------------------------------\n");
+			printf("RAM\n");
+			printf("---------------------------------------\n");
+			uint16_t ram[1024];
+			getRAM(cpu, ram);
+
+			for(uint16_t ram_index = ram_window_start; (ram_index < ram_window_end && (ram_index + 7) < 1024); ram_index += 8) {
+				printf("%03x: ", ram_index);
+				for(int i = 0; i < 8; i++) {
+					printf("%04x", ram[ram_index + i]);
+				}
+				printf("\n");
+			}
+
+			printf("---------------------------------------\n");
+			printf("(n)ext, (q)uit, move to ram offset: ");
 
 			string command;
 			cin >> command;
@@ -99,6 +130,10 @@ int main(int argc, char ** argv) {
 				case 'q':
 				case 'Q':
 					quit = 1;
+					break;
+				case '0':
+					ram_window_start = strtol(command.c_str(), NULL, 16);
+					ram_window_end = ram_window_start + 0x80;
 			}
 
 			printf("\n");
