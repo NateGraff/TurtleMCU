@@ -1,10 +1,15 @@
 .org 0x000
 
-start:	mvh  r0, 0x02	# memory address 0x200
+		.ldtag r0, s1
+		call puts
+		mvh  r0, 0x02	# memory address 0x200
 		call gets
 		call puts
 
 done:	jmp done
+
+.org 0x100
+.string s1 "Type some stuff: "
 
 .org 0x300
 

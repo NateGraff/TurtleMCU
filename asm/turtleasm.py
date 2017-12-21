@@ -41,6 +41,11 @@ always_comb begin
 				if(parsed['type'] == 'directive'):
 					if(parsed['directive'] == '.org'):
 						address = int(parsed['address'], 16)
+					if(parsed['directive'] == '.string'):
+						tags[parsed['stringtag']] = address
+						address += len(parsed['stringcontent']) + 1
+					if(parsed['directive'] == '.ldtag'):
+						address += 2
 					continue
 
 				if('tag' in parsed.keys()):
@@ -55,6 +60,40 @@ always_comb begin
 				if(parsed['type'] == 'directive'):
 					if(parsed['directive'] == '.org'):
 						address = int(parsed['address'], 16)
+
+					if(parsed['directive'] == '.string'):
+						for char in parsed['stringcontent']:
+							rom.write("			")
+							rom.write("10'h{:03x}: dout = ".format(address))
+							rom.write("{")
+							rom.write("16'h{:04x}".format(ord(char)))
+							rom.write("};\n")
+							address += 1
+						rom.write("			")
+						rom.write("10'h{:03x}: dout = ".format(address))
+						rom.write("{16'h0};\n")
+						address += 1
+
+					if(parsed['directive'] == '.ldtag'):
+						destdefine = register_defines[parsed['dest']]
+
+						if(not parsed['tagref'] in tags.keys()):
+							raise Exception("Unknown tag {} at line {}".format(parsed['tagref'], lineno))
+
+						tagaddr = tags[parsed['tagref']]
+
+						rom.write("			")
+						rom.write("10'h{:03x}: dout = ".format(address))
+						rom.write("{")
+						rom.write("`OPCODE_MVH, {}, 8'h{:02x}".format(destdefine, 0xFF & (tagaddr >> 8)))
+						rom.write("};\n")
+						address += 1
+						rom.write("			")
+						rom.write("10'h{:03x}: dout = ".format(address))
+						rom.write("{")
+						rom.write("`OPCODE_MVL, {}, 8'h{:02x}".format(destdefine, 0xFF & tagaddr))
+						rom.write("};\n")
+						address += 1
 
 				elif(parsed['type'] == 'ignore'):
 					pass
