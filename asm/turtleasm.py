@@ -5,6 +5,7 @@ from symbols import *
 from pyparsing import ParseException
 
 import sys
+import ast
 
 def parseLine(text):
 	try:
@@ -43,7 +44,7 @@ always_comb begin
 						address = int(parsed['address'], 16)
 					elif(parsed['directive'] == '.string'):
 						tags[parsed['stringtag']] = address
-						address += len(parsed['stringcontent']) + 1
+						address += len(ast.literal_eval(parsed['stringcontent'])) + 1
 					elif(parsed['directive'] == '.ldtag'):
 						address += 2
 					elif(parsed['directive'] == '.resv'):
@@ -67,7 +68,7 @@ always_comb begin
 						address = int(parsed['address'], 16)
 
 					if(parsed['directive'] == '.string'):
-						for char in parsed['stringcontent']:
+						for char in ast.literal_eval(parsed['stringcontent']):
 							rom.write("			")
 							rom.write("10'h{:03x}: dout = ".format(address))
 							rom.write("{")

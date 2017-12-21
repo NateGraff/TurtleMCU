@@ -12,7 +12,7 @@ regaddr = '[' + register.setResultsName('src') + Optional(Combine(Or(['+','-']) 
 spaddr = '[' + sp + Optional(Combine(Or(['+','-']) + Word(nums))).setResultsName('offset') + ']'
 
 org = CaselessKeyword('.org') + White() + address.setResultsName('address')
-string = CaselessKeyword('.string') + White() + Word(alphanums).setResultsName('stringtag') + White() + quotedString.addParseAction(removeQuotes).setResultsName('stringcontent')
+string = CaselessKeyword('.string') + White() + Word(alphanums).setResultsName('stringtag') + White() + quotedString.setResultsName('stringcontent')
 ldtag = CaselessKeyword('.ldtag') + White() + register.setResultsName('dest') + Optional(White()) + ',' + Optional(White()) + tagref.setResultsName('tagref')
 resv = CaselessKeyword('.resv') + White() + Optional(Word(alphanums)).setResultsName('resvtag') + White() + Word(nums).setResultsName('size')
 
