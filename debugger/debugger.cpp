@@ -26,6 +26,7 @@ using namespace std;
 #define KWHT 7
 
 vluint64_t main_time = 0;
+Vcpu * cpu;
 
 double sc_time_stamp() {
 	return main_time;
@@ -62,62 +63,151 @@ void initColors() {
 	init_pair(KWHT, COLOR_BLACK, COLOR_WHITE);
 }
 
-void renderScreen(Vcpu * cpu, uint16_t ram_window_start, uint16_t ram_window_end) {
-	// clear terminal
-	clear();
-	move(0,0);
+void moveRelative(WINDOW * win, int dy, int dx) {
+	int y, x;
+	getyx(win, y, x);
+	wmove(win, y + dy, x + dx);
+}
 
-	// print registers
-	printw("---------------------------------------\n");
-	printw("Registers\n");
-	printw("---------------------------------------\n");
-	attron(COLOR_PAIR(KRED));
-	printw("pc");
-	attroff(COLOR_PAIR(KRED));
-	printw(" = %03x  ", getPC(cpu));
-	attron(COLOR_PAIR(KYEL));
-	printw("sp");
-	attroff(COLOR_PAIR(KYEL));
-	printw(" = %03x\n", getSP(cpu));
+void nextLine(WINDOW * win) {
+	int y, x;
+	moveRelative(win, 1, 0);
+	getyx(win, y, x);
+	wmove(win, y, 1);
+}
+
+WINDOW * createRAMWin() {
+	return newwin((LINES - 1) / 2, COLS / 2, 0, 0);
+}
+
+void renderRAMWin(WINDOW * ramwin, uint16_t ram_window_start) {
+	werase(ramwin);
+
+	box(ramwin, 0, 0);
+
+	// print window title
+	wmove(ramwin, 1, 2);
+	wprintw(ramwin, "RAM");
+	nextLine(ramwin);
+	nextLine(ramwin);
+	
+	// retrieve RAM contents
+	uint16_t ram[1024];
+	getRAM(cpu, ram);
+
+	int availableWidth = (COLS / 2) - 9;
+	int availableHeight = (LINES - 1) / 2 - 5;
+	int wordsPerLine = availableWidth / 5;
+	uint16_t ram_window_end = ram_window_start + wordsPerLine * availableHeight;
+	if(ram_window_end > 1024) {
+		ram_window_end = 1024;
+	}
+
+	for(uint16_t ram_index = ram_window_start; ram_index < ram_window_end; ram_index += wordsPerLine) {
+		moveRelative(ramwin, 0, 1);
+		wprintw(ramwin, "%03x: ", ram_index);
+		for(int i = 0; i < wordsPerLine && (ram_index + i) < 1024; i++) {
+			if(getPC(cpu) == ram_index + i) {
+				wattron(ramwin, COLOR_PAIR(KRED));
+				wprintw(ramwin, "%04x ", ram[ram_index + i]);
+				wattroff(ramwin, COLOR_PAIR(KRED));
+			} else if(getSP(cpu) == ram_index + i) {
+				wattron(ramwin, COLOR_PAIR(KYEL));
+				wprintw(ramwin, "%04x ", ram[ram_index + i]);
+				wattroff(ramwin, COLOR_PAIR(KYEL));
+			} else {
+				wprintw(ramwin, "%04x ", ram[ram_index + i]);
+			}
+		}
+		nextLine(ramwin);
+	}
+
+	wrefresh(ramwin);
+}
+
+WINDOW * createRegWin() {
+	return newwin(8, COLS / 2, 0, COLS / 2);
+}
+
+void renderRegWin(WINDOW * regwin) {
+	werase(regwin);
+
+	box(regwin, 0, 0);
+
+	wmove(regwin, 1, 2);
+	wprintw(regwin, "Registers");
+	nextLine(regwin);
+	nextLine(regwin);
+
+	moveRelative(regwin, 0, 1);
+	wattron(regwin, COLOR_PAIR(KRED));
+	wprintw(regwin, "pc");
+	wattroff(regwin, COLOR_PAIR(KRED));
+	wprintw(regwin, " = %03x  ", getPC(cpu));
+	wattron(regwin, COLOR_PAIR(KYEL));
+	wprintw(regwin, "sp");
+	wattroff(regwin, COLOR_PAIR(KYEL));
+	wprintw(regwin, " = %03x", getSP(cpu));
+	nextLine(regwin);
+	moveRelative(regwin, 0, 1);
 	
 	uint16_t registers[8];
 	getRegisters(cpu, registers);
 	
 	for(int i = 0; i < 4; i++) {
-		printw("r%d = %04x ", i, registers[i]);
+		wprintw(regwin, "r%d = %04x ", i, registers[i]);
 	}
-	printw("\n");
+	nextLine(regwin);
+	moveRelative(regwin, 0, 1);
 	for(int i = 0; i < 4; i++) {
-		printw("r%d = %04x ", i+4, registers[4+i]);
+		wprintw(regwin, "r%d = %04x ", i+4, registers[4+i]);
 	}
-	printw("\n");
+	nextLine(regwin);
+	moveRelative(regwin, 0, 1);
+	wrefresh(regwin);
+}
 
-	// print ram
-	printw("---------------------------------------\n");
-	printw("RAM\n");
-	printw("---------------------------------------\n");
-	uint16_t ram[1024];
-	getRAM(cpu, ram);
+WINDOW * createAsmWin() {
+	return newwin((LINES - 1) / 2, COLS / 2, (LINES - 1) / 2, 0);
+}
 
-	for(uint16_t ram_index = ram_window_start; (ram_index < ram_window_end && (ram_index + 7) < 1024); ram_index += 8) {
-		printw("%03x: ", ram_index);
-		for(int i = 0; i < 8; i++) {
-			if(getPC(cpu) == ram_index + i) {
-				attron(COLOR_PAIR(KRED));
-				printw("%04x", ram[ram_index + i]);
-				attroff(COLOR_PAIR(KRED));
-			} else if(getSP(cpu) == ram_index + i) {
-				attron(COLOR_PAIR(KYEL));
-				printw("%04x", ram[ram_index + i]);
-				attroff(COLOR_PAIR(KYEL));
-			} else {
-				printw("%04x", ram[ram_index + i]);
-			}
-		}
-		printw("\n");
-	}
+void renderAsmWin(WINDOW * asmwin) {
+	werase(asmwin);
+	box(asmwin, 0, 0);
+	wmove(asmwin, 1, 2);
+	wprintw(asmwin, "Assembly");
+	wrefresh(asmwin);
+}
 
-	printw("---------------------------------------\n");
+WINDOW * createIOWin() {
+	return newwin(LINES - 9, COLS / 2, 8, COLS / 2);
+}
+
+void renderIOWin(WINDOW * iowin) {
+	werase(iowin);
+	box(iowin, 0, 0);
+	wmove(iowin, 1, 2);
+	wprintw(iowin, "Console");
+	wrefresh(iowin);
+}
+
+WINDOW * createCmdWin() {
+	return newwin(1, COLS, LINES - 1, 0);
+}
+
+void setCmdWin(WINDOW * cmdwin, const char * str) {
+	werase(cmdwin);
+	wmove(cmdwin, 0, 0);
+	wprintw(cmdwin, "%s", str);
+	wrefresh(cmdwin);
+}
+
+void renderScreen(Vcpu * cpu, WINDOW * ramwin, WINDOW * regwin, WINDOW * asmwin, uint16_t ram_window_start, WINDOW * iowin) {
+	// render windows
+	renderRegWin(regwin);
+	renderRAMWin(ramwin, ram_window_start);
+	renderAsmWin(asmwin);
+	renderIOWin(iowin);
 }
 
 int main(int argc, char ** argv) {
@@ -126,7 +216,13 @@ int main(int argc, char ** argv) {
 	initscr();
 	initColors();
 
-	Vcpu * cpu = new Vcpu;
+	WINDOW * ramwin = createRAMWin();
+	WINDOW * regwin = createRegWin();
+	WINDOW * asmwin = createAsmWin();
+	WINDOW * iowin  = createIOWin();
+	WINDOW * cmdwin = createCmdWin();
+
+	cpu = new Vcpu;
 
 	// Initialize inputs
 	uint8_t clk = 0;
@@ -154,7 +250,6 @@ int main(int argc, char ** argv) {
 	int quit = 0;
 	int next = 0;
 	uint16_t ram_window_start = 0x000;
-	uint16_t ram_window_end = 0x80;
 
 	while(!Verilated::gotFinish() && !quit) {
 		// Advance the clock
@@ -167,29 +262,26 @@ int main(int argc, char ** argv) {
 		if(clk == 1 && getState(cpu) == 0b011) {
 			next = 0;
 			while(!next && !quit) {
-				renderScreen(cpu, ram_window_start, ram_window_end);
+				renderScreen(cpu, ramwin, regwin, asmwin, ram_window_start, iowin);
 
-				printw("(n)ext, (q)uit, (r)am: ");
+				setCmdWin(cmdwin, "(n)ext, (q)uit, (r)am: ");
 
 				char address[100];
 
-				switch(getch()) {
+				switch(wgetch(cmdwin)) {
 					default:
 						break;
 					case 'q':
 					case 'Q':
-						printw("\nAre you sure you want to quit? (y/n): ");
-						refresh();
-						if(getch() == 'y') {
+						setCmdWin(cmdwin, "Are you sure you want to quit? (y/n): ");
+						if(wgetch(cmdwin) == 'y') {
 							quit = 1;
 						}
 						break;
 					case 'r':
-						printw("\nEnter address: ");
-						refresh();
-						getstr(address);
+						setCmdWin(cmdwin, "Enter address: ");
+						wgetstr(cmdwin, address);
 						ram_window_start = strtol(address, NULL, 16);
-						ram_window_end = ram_window_start + 0x80;
 						break;
 					case 'n':
 						next = 1;
@@ -204,6 +296,11 @@ int main(int argc, char ** argv) {
 
 	cpu->final();
 	delete cpu;
+
+	delwin(ramwin);
+	delwin(regwin);
+	delwin(asmwin);
+	delwin(cmdwin);
 
 	endwin();
 	return 0;
