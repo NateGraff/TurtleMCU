@@ -7,6 +7,8 @@
 #include "../obj_dir/Vcpu_sp.h"
 #include "../obj_dir/Vcpu_ram.h"
 
+#include <ncurses.h>
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -15,14 +17,13 @@
 
 using namespace std;
 
-#define KNRM  "\x1B[0m"
-#define KRED  "\x1B[31m"
-#define KGRN  "\x1B[32m"
-#define KYEL  "\x1B[33m"
-#define KBLU  "\x1B[34m"
-#define KMAG  "\x1B[35m"
-#define KCYN  "\x1B[36m"
-#define KWHT  "\x1B[37m"
+#define KRED 1
+#define KGRN 2
+#define KYEL 3
+#define KBLU 4
+#define KMAG 5
+#define KCYN 6
+#define KWHT 7
 
 vluint64_t main_time = 0;
 
@@ -50,54 +51,80 @@ uint16_t getSP(Vcpu * cpu) {
 	return cpu->__PVT__cpu->__PVT__sp_i->__PVT__dout;
 }
 
+void initColors() {
+	start_color();
+	init_pair(KRED, COLOR_RED, COLOR_BLACK);
+	init_pair(KGRN, COLOR_GREEN, COLOR_BLACK);
+	init_pair(KYEL, COLOR_YELLOW, COLOR_BLACK);
+	init_pair(KBLU, COLOR_BLUE, COLOR_BLACK);
+	init_pair(KMAG, COLOR_MAGENTA, COLOR_BLACK);
+	init_pair(KCYN, COLOR_CYAN, COLOR_BLACK);
+	init_pair(KWHT, COLOR_BLACK, COLOR_WHITE);
+}
+
 void renderScreen(Vcpu * cpu, uint16_t ram_window_start, uint16_t ram_window_end) {
 	// clear terminal
-	printf("\033[2J\033[1;1H");
+	clear();
+	move(0,0);
 
 	// print registers
-	printf("---------------------------------------\n");
-	printf("Registers\n");
-	printf("---------------------------------------\n");
-	printf(KRED "pc" KNRM " = %03x, " KYEL "sp" KNRM " = %03x\n", getPC(cpu), getSP(cpu));
+	printw("---------------------------------------\n");
+	printw("Registers\n");
+	printw("---------------------------------------\n");
+	attron(COLOR_PAIR(KRED));
+	printw("pc");
+	attroff(COLOR_PAIR(KRED));
+	printw(" = %03x  ", getPC(cpu));
+	attron(COLOR_PAIR(KYEL));
+	printw("sp");
+	attroff(COLOR_PAIR(KYEL));
+	printw(" = %03x\n", getSP(cpu));
 	
 	uint16_t registers[8];
 	getRegisters(cpu, registers);
 	
 	for(int i = 0; i < 4; i++) {
-		printf("r%d = %04x ", i, registers[i]);
+		printw("r%d = %04x ", i, registers[i]);
 	}
-	printf("\n");
+	printw("\n");
 	for(int i = 0; i < 4; i++) {
-		printf("r%d = %04x ", i+4, registers[4+i]);
+		printw("r%d = %04x ", i+4, registers[4+i]);
 	}
-	printf("\n");
+	printw("\n");
 
 	// print ram
-	printf("---------------------------------------\n");
-	printf("RAM\n");
-	printf("---------------------------------------\n");
+	printw("---------------------------------------\n");
+	printw("RAM\n");
+	printw("---------------------------------------\n");
 	uint16_t ram[1024];
 	getRAM(cpu, ram);
 
 	for(uint16_t ram_index = ram_window_start; (ram_index < ram_window_end && (ram_index + 7) < 1024); ram_index += 8) {
-		printf("%03x: ", ram_index);
+		printw("%03x: ", ram_index);
 		for(int i = 0; i < 8; i++) {
 			if(getPC(cpu) == ram_index + i) {
-				printf(KRED "%04x" KNRM, ram[ram_index + i]);
+				attron(COLOR_PAIR(KRED));
+				printw("%04x", ram[ram_index + i]);
+				attroff(COLOR_PAIR(KRED));
 			} else if(getSP(cpu) == ram_index + i) {
-				printf(KYEL "%04x" KNRM, ram[ram_index + i]);
+				attron(COLOR_PAIR(KYEL));
+				printw("%04x", ram[ram_index + i]);
+				attroff(COLOR_PAIR(KYEL));
 			} else {
-				printf("%04x", ram[ram_index + i]);
+				printw("%04x", ram[ram_index + i]);
 			}
 		}
-		printf("\n");
+		printw("\n");
 	}
 
-	printf("---------------------------------------\n");
+	printw("---------------------------------------\n");
 }
 
 int main(int argc, char ** argv) {
 	Verilated::commandArgs(argc, argv);
+
+	initscr();
+	initColors();
 
 	Vcpu * cpu = new Vcpu;
 
@@ -142,28 +169,32 @@ int main(int argc, char ** argv) {
 			while(!next && !quit) {
 				renderScreen(cpu, ram_window_start, ram_window_end);
 
-				printf("(n)ext, (q)uit, move to ram offset: ");
+				printw("(n)ext, (q)uit, (r)am: ");
 
-				string command;
-				cin >> command;
+				char address[100];
 
-				switch(command[0]) {
+				switch(getch()) {
 					default:
 						break;
 					case 'q':
 					case 'Q':
-						quit = 1;
+						printw("\nAre you sure you want to quit? (y/n): ");
+						refresh();
+						if(getch() == 'y') {
+							quit = 1;
+						}
 						break;
-					case '0':
-						ram_window_start = strtol(command.c_str(), NULL, 16);
+					case 'r':
+						printw("\nEnter address: ");
+						refresh();
+						getstr(address);
+						ram_window_start = strtol(address, NULL, 16);
 						ram_window_end = ram_window_start + 0x80;
 						break;
 					case 'n':
 						next = 1;
 						break;
 				}
-
-				printf("\n");
 			}
 		}
 		
@@ -173,5 +204,7 @@ int main(int argc, char ** argv) {
 
 	cpu->final();
 	delete cpu;
+
+	endwin();
 	return 0;
 }

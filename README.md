@@ -23,6 +23,7 @@ As it stands, there are now a number of components to the project:
 - make
 - GCC/Clang
 - Verilator
+- ncurses
 - Python 3
 - pyparsing
 - GTKWave (or other waveform viewer of .vcd files)

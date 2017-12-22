@@ -20,7 +20,7 @@ DEBUG_SRC_C = $(DEBUGGER_DIR)/*.cpp
 DEBUG_SRC = $(DEBUG_SRC_C)
 
 debugger: rom $(SRC_DIR)/*.sv $(DEBUG_SRC)
-	verilator -cc $(SRC_DIR)/cpu.sv -I$(SRC_DIR) -O0 --exe $(DEBUG_SRC_C)
+	verilator -cc $(SRC_DIR)/cpu.sv -I$(SRC_DIR) -O0 --exe $(DEBUG_SRC_C) -LDFLAGS -lncurses
 	$(MAKE) -j -C obj_dir/ -f Vcpu.mk
 	./obj_dir/Vcpu
 
