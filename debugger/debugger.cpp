@@ -14,6 +14,8 @@
 #include <cstring>
 #include <iostream>
 #include <string>
+#include <queue>
+#include <vector>
 
 using namespace std;
 
@@ -27,6 +29,8 @@ using namespace std;
 
 vluint64_t main_time = 0;
 Vcpu * cpu;
+
+vector<char> iowinoutput;
 
 double sc_time_stamp() {
 	return main_time;
@@ -193,8 +197,45 @@ void renderIOWin(WINDOW * iowin) {
 	box(iowin, 0, 0);
 	wmove(iowin, 1, 2);
 	wprintw(iowin, "Console");
+	nextLine(iowin);
+	nextLine(iowin);
+
+	int consoleHeight = ((LINES - 2) / 2 - 5);
+	int consoleWidth = (COLS / 2 - 4);
+	for(int i = 0; i < consoleHeight; i++) {
+		for(int j = 0; j < consoleWidth && (i * consoleWidth + j) < iowinoutput.size(); j++) {
+			char c = iowinoutput[i * consoleWidth + j];
+			if(c != '\n') {
+				wprintw(iowin, "%c", c);
+			} else {
+				nextLine(iowin);
+			}
+		}
+		nextLine(iowin);
+	}
 	wrefresh(iowin);
 }
+
+void writeIOchar(WINDOW * iowin, char c) {
+	int consoleSize = ((LINES - 2) / 2 - 5) * (COLS / 2 - 4);
+	iowinoutput.push_back(c);
+	if(iowinoutput.size() > consoleSize) {
+		iowinoutput.erase(iowinoutput.begin());
+	}
+}
+
+void writeIOint(WINDOW * iowin, uint16_t i) {
+	int consoleSize = ((LINES - 2) / 2 - 5) * (COLS / 2 - 4);
+	char buf[100];
+	sprintf(buf, "time %lu: %d\n", main_time, i);
+	for(int i = 0; i < 100 & buf[i] != 0; i++) {
+		iowinoutput.push_back(buf[i]);
+	}
+	if(iowinoutput.size() > consoleSize) {
+		iowinoutput.erase(iowinoutput.begin());
+	}
+}
+
 
 WINDOW * createCmdWin() {
 	return newwin(2, COLS, LINES - 2, 0);
@@ -270,6 +311,15 @@ int main(int argc, char ** argv) {
 	int next = 0;
 	uint16_t ram_window_start = 0x000;
 
+	enum {
+		PORT_IDLE,
+		PORT_OUT_INT,
+		PORT_OUT_STRING,
+		PORT_IN
+	} port_state = PORT_IDLE;
+
+	queue<char> input_queue;
+
 	while(!Verilated::gotFinish() && !quit) {
 		// Advance the clock
 		clk = !clk;
@@ -278,6 +328,60 @@ int main(int argc, char ** argv) {
 		// Evaluate and dump trace
 		cpu->eval();
 
+		// Console output
+		if(clk == 1 && cpu->output_valid) {
+			if(port_state == PORT_IDLE) {
+				switch(cpu->out_port) {
+					case 1:
+						port_state = PORT_OUT_INT;
+						break;
+					case 2:
+						port_state = PORT_OUT_STRING;
+						break;
+				}
+			} else {
+				if(port_state == PORT_OUT_INT) {
+					writeIOint(iowin, cpu->out_port);
+				} else if(port_state == PORT_OUT_STRING) {
+					writeIOchar(iowin, (char) cpu->out_port);
+				}
+				port_state = PORT_IDLE;
+			}
+		}
+
+		// Console input
+		if(clk == 1) {
+			if(cpu->input_ready) {
+				if(port_state == PORT_IDLE) {
+					if(!input_queue.empty()) {
+						port_state = PORT_IN;
+						cpu->in_port = input_queue.front();
+					} else {
+						setCmdWin(cmdwin, "Input: ");
+
+						char input[1000];
+						wgetstr(cmdwin, input);
+
+						for(int i = 0; i < 1000 && input[i] != 0; i++) {
+							input_queue.push(input[i]);
+
+							// Echo to console
+							writeIOchar(iowin, input[i]);
+						}
+						input_queue.push('\n');
+						writeIOchar(iowin, '\n');
+					}
+					cpu->input_valid = 1;
+				}
+			}
+			else if(port_state == PORT_IN) {
+				port_state = PORT_IDLE;
+				cpu->input_valid = 0;
+				input_queue.pop();
+			}
+		}
+
+		// Debugger flow control
 		if(clk == 1 && getState(cpu) == 0b011) {
 			next = 0;
 			while(!next && !quit) {
