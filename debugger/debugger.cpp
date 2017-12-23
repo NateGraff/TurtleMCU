@@ -419,7 +419,13 @@ int main(int argc, char ** argv) {
 						setCmdWin(cmdwin, "Input: ");
 
 						char input[1000];
+						if(run_to_breakpoint) {
+							nodelay(cmdwin, false);
+						}
 						wgetstr(cmdwin, input);
+						if(run_to_breakpoint) {
+							nodelay(cmdwin, true);
+						}
 
 						for(int i = 0; i < 1000 && input[i] != 0; i++) {
 							input_queue.push(input[i]);
@@ -446,19 +452,7 @@ int main(int argc, char ** argv) {
 			while(!next && !quit && !run_to_breakpoint) {
 				renderScreen(cpu, ramwin, regwin, asmwin, ram_window_start, iowin, cmdwin);
 
-				int allow_run = 0;
-				for(map<uint16_t, breakpoint_t>::iterator it = breakpoints.begin(); it != breakpoints.end(); it++) {
-					if(it->second != BREAKPOINT_OFF) {
-						allow_run = 1;
-						break;
-					}
-				}
-
-				if(allow_run) {
-					setCmdWin(cmdwin, "(n)ext, (q)uit, (a) ram, (j/k) scroll, (b) toggle breakpoint, (o) step over, (r)un to breakpoint: ");
-				} else {
-					setCmdWin(cmdwin, "(n)ext, (q)uit, (a) ram, (j/k) scroll, (b) toggle breakpoint, (o) step over: ");
-				}
+				setCmdWin(cmdwin, "(n)ext, (q)uit, (a) ram, (j/k) scroll, (b) toggle breakpoint, (o) step over, (r)un to breakpoint: ");
 
 				char address[100];
 				uint16_t addr;
@@ -514,13 +508,13 @@ int main(int argc, char ** argv) {
 						next = 1;
 						break;
 					case 'r':
-						if(allow_run) {
-							run_to_breakpoint = 1;
-						}
+						run_to_breakpoint = 1;
+						nodelay(cmdwin, true);
 						break;
 					case 'o':
 						breakpoints[getPC(cpu)+1] = BREAKPOINT_TEMP;
 						run_to_breakpoint = 1;
+						nodelay(cmdwin, true);
 						break;
 				}
 			}
@@ -530,6 +524,20 @@ int main(int argc, char ** argv) {
 			run_to_breakpoint = 0;
 			if(breakpoints[getPC(cpu)] == BREAKPOINT_TEMP) {
 				breakpoints[getPC(cpu)] = BREAKPOINT_OFF;
+			}
+		}
+
+		if(run_to_breakpoint) {
+			renderScreen(cpu, ramwin, regwin, asmwin, ram_window_start, iowin, cmdwin);
+			setCmdWin(cmdwin, "Running -- (s) to break: ");
+			if(wgetch(cmdwin) == 's') {
+				run_to_breakpoint = 0;
+				nodelay(cmdwin, false);
+				for(map<uint16_t, breakpoint_t>::iterator it = breakpoints.begin(); it != breakpoints.end(); it++) {
+					if(it->second == BREAKPOINT_TEMP) {
+						it->second = BREAKPOINT_OFF;
+					}
+				}
 			}
 		}
 		
