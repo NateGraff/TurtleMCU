@@ -376,7 +376,7 @@ int main(int argc, char ** argv) {
 
 	queue<char> input_queue;
 
-	int run_to_breakpoint = 0;
+	int run = 0;
 
 	while(!Verilated::gotFinish() && !quit) {
 		// Advance the clock
@@ -419,11 +419,11 @@ int main(int argc, char ** argv) {
 						setCmdWin(cmdwin, "Input: ");
 
 						char input[1000];
-						if(run_to_breakpoint) {
+						if(run) {
 							nodelay(cmdwin, false);
 						}
 						wgetstr(cmdwin, input);
-						if(run_to_breakpoint) {
+						if(run) {
 							nodelay(cmdwin, true);
 						}
 
@@ -447,12 +447,12 @@ int main(int argc, char ** argv) {
 		}
 
 		// Debugger flow control
-		if(clk == 1 && getState(cpu) == 0b011 && !run_to_breakpoint) {
+		if(clk == 1 && getState(cpu) == 0b011 && !run) {
 			next = 0;
-			while(!next && !quit && !run_to_breakpoint) {
+			while(!next && !quit && !run) {
 				renderScreen(cpu, ramwin, regwin, asmwin, ram_window_start, iowin, cmdwin);
 
-				setCmdWin(cmdwin, "(n)ext, (q)uit, (a) ram, (j/k) scroll, (b) toggle breakpoint, (o) step over, (r)un to breakpoint: ");
+				setCmdWin(cmdwin, "(n)ext, (o) step over, (j/k) scroll, (b) toggle breakpoint, (r)un, (a) ram, (q)uit: ");
 
 				char address[100];
 				uint16_t addr;
@@ -508,12 +508,12 @@ int main(int argc, char ** argv) {
 						next = 1;
 						break;
 					case 'r':
-						run_to_breakpoint = 1;
+						run = 1;
 						nodelay(cmdwin, true);
 						break;
 					case 'o':
 						breakpoints[getPC(cpu)+1] = BREAKPOINT_TEMP;
-						run_to_breakpoint = 1;
+						run = 1;
 						nodelay(cmdwin, true);
 						break;
 				}
@@ -521,17 +521,17 @@ int main(int argc, char ** argv) {
 		}
 
 		if(breakpoints[getPC(cpu)]) {
-			run_to_breakpoint = 0;
+			run = 0;
 			if(breakpoints[getPC(cpu)] == BREAKPOINT_TEMP) {
 				breakpoints[getPC(cpu)] = BREAKPOINT_OFF;
 			}
 		}
 
-		if(run_to_breakpoint) {
+		if(run) {
 			renderScreen(cpu, ramwin, regwin, asmwin, ram_window_start, iowin, cmdwin);
 			setCmdWin(cmdwin, "Running -- (s) to break: ");
 			if(wgetch(cmdwin) == 's') {
-				run_to_breakpoint = 0;
+				run = 0;
 				nodelay(cmdwin, false);
 				for(map<uint16_t, breakpoint_t>::iterator it = breakpoints.begin(); it != breakpoints.end(); it++) {
 					if(it->second == BREAKPOINT_TEMP) {
@@ -551,6 +551,7 @@ int main(int argc, char ** argv) {
 	delwin(ramwin);
 	delwin(regwin);
 	delwin(asmwin);
+	delwin(iowin);
 	delwin(cmdwin);
 
 	endwin();
