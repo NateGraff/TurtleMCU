@@ -73,11 +73,11 @@ void nextLine(WINDOW * win) {
 	int y, x;
 	moveRelative(win, 1, 0);
 	getyx(win, y, x);
-	wmove(win, y, 1);
+	wmove(win, y, 2);
 }
 
 WINDOW * createRAMWin() {
-	return newwin((LINES - 1) / 2, COLS / 2, 0, 0);
+	return newwin((LINES - 2) / 2, COLS / 2, 0, 0);
 }
 
 void renderRAMWin(WINDOW * ramwin, uint16_t ram_window_start) {
@@ -95,16 +95,15 @@ void renderRAMWin(WINDOW * ramwin, uint16_t ram_window_start) {
 	uint16_t ram[1024];
 	getRAM(cpu, ram);
 
-	int availableWidth = (COLS / 2) - 9;
+	int availableWidth = (COLS / 2) - 10;
 	int availableHeight = (LINES - 1) / 2 - 5;
-	int wordsPerLine = availableWidth / 5;
+	int wordsPerLine = availableWidth / 7;
 	uint16_t ram_window_end = ram_window_start + wordsPerLine * availableHeight;
 	if(ram_window_end > 1024) {
 		ram_window_end = 1024;
 	}
 
 	for(uint16_t ram_index = ram_window_start; ram_index < ram_window_end; ram_index += wordsPerLine) {
-		moveRelative(ramwin, 0, 1);
 		wprintw(ramwin, "%03x: ", ram_index);
 		for(int i = 0; i < wordsPerLine && (ram_index + i) < 1024; i++) {
 			if(getPC(cpu) == ram_index + i) {
@@ -119,6 +118,16 @@ void renderRAMWin(WINDOW * ramwin, uint16_t ram_window_start) {
 				wprintw(ramwin, "%04x ", ram[ram_index + i]);
 			}
 		}
+		moveRelative(ramwin, 0, 1);
+		for(int i = 0; i < 2 * wordsPerLine; i++) {
+			char c = ((uint8_t * ) ram)[2*ram_index + i];
+			if(c >= 32 && c <= 127) {
+				wprintw(ramwin, "%c", c);
+			} else {
+				wprintw(ramwin, ".");
+			}
+		}
+
 		nextLine(ramwin);
 	}
 
@@ -139,7 +148,6 @@ void renderRegWin(WINDOW * regwin) {
 	nextLine(regwin);
 	nextLine(regwin);
 
-	moveRelative(regwin, 0, 1);
 	wattron(regwin, COLOR_PAIR(KRED));
 	wprintw(regwin, "pc");
 	wattroff(regwin, COLOR_PAIR(KRED));
@@ -149,7 +157,6 @@ void renderRegWin(WINDOW * regwin) {
 	wattroff(regwin, COLOR_PAIR(KYEL));
 	wprintw(regwin, " = %03x", getSP(cpu));
 	nextLine(regwin);
-	moveRelative(regwin, 0, 1);
 	
 	uint16_t registers[8];
 	getRegisters(cpu, registers);
@@ -158,17 +165,15 @@ void renderRegWin(WINDOW * regwin) {
 		wprintw(regwin, "r%d = %04x ", i, registers[i]);
 	}
 	nextLine(regwin);
-	moveRelative(regwin, 0, 1);
 	for(int i = 0; i < 4; i++) {
 		wprintw(regwin, "r%d = %04x ", i+4, registers[4+i]);
 	}
 	nextLine(regwin);
-	moveRelative(regwin, 0, 1);
 	wrefresh(regwin);
 }
 
 WINDOW * createAsmWin() {
-	return newwin((LINES - 1) / 2, COLS / 2, (LINES - 1) / 2, 0);
+	return newwin(LINES - 10, COLS / 2, 8, COLS / 2);
 }
 
 void renderAsmWin(WINDOW * asmwin) {
@@ -180,7 +185,7 @@ void renderAsmWin(WINDOW * asmwin) {
 }
 
 WINDOW * createIOWin() {
-	return newwin(LINES - 9, COLS / 2, 8, COLS / 2);
+	return newwin((LINES - 2) / 2, COLS / 2, (LINES - 2) / 2, 0);
 }
 
 void renderIOWin(WINDOW * iowin) {
@@ -192,7 +197,7 @@ void renderIOWin(WINDOW * iowin) {
 }
 
 WINDOW * createCmdWin() {
-	return newwin(1, COLS, LINES - 1, 0);
+	return newwin(2, COLS, LINES - 2, 0);
 }
 
 void setCmdWin(WINDOW * cmdwin, const char * str) {
@@ -202,12 +207,26 @@ void setCmdWin(WINDOW * cmdwin, const char * str) {
 	wrefresh(cmdwin);
 }
 
-void renderScreen(Vcpu * cpu, WINDOW * ramwin, WINDOW * regwin, WINDOW * asmwin, uint16_t ram_window_start, WINDOW * iowin) {
+void renderScreen(Vcpu * cpu, WINDOW * ramwin, WINDOW * regwin, WINDOW * asmwin, uint16_t ram_window_start, WINDOW * iowin, WINDOW * cmdwin) {
+	clear();
+
+	// resize windows
+	wresize(ramwin, (LINES - 2) / 2, COLS / 2);
+	mvwin(ramwin, 0, 0);
+	wresize(regwin, 8, COLS / 2);
+	mvwin(regwin, 0, COLS / 2);
+	wresize(asmwin, LINES - 10, COLS / 2);
+	mvwin(asmwin, 8, COLS / 2);
+	wresize(iowin, (LINES - 2) / 2, COLS / 2);
+	mvwin(iowin, (LINES - 2) / 2, 0);
+	wresize(cmdwin, 2, COLS);
+	mvwin(cmdwin, LINES - 2, 0);
 	// render windows
 	renderRegWin(regwin);
 	renderRAMWin(ramwin, ram_window_start);
 	renderAsmWin(asmwin);
 	renderIOWin(iowin);
+	wrefresh(cmdwin);
 }
 
 int main(int argc, char ** argv) {
@@ -262,7 +281,7 @@ int main(int argc, char ** argv) {
 		if(clk == 1 && getState(cpu) == 0b011) {
 			next = 0;
 			while(!next && !quit) {
-				renderScreen(cpu, ramwin, regwin, asmwin, ram_window_start, iowin);
+				renderScreen(cpu, ramwin, regwin, asmwin, ram_window_start, iowin, cmdwin);
 
 				setCmdWin(cmdwin, "(n)ext, (q)uit, (r)am: ");
 
