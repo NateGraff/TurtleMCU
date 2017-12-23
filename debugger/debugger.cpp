@@ -32,12 +32,19 @@ using namespace std;
 vluint64_t main_time = 0;
 Vcpu * cpu;
 
+typedef enum {
+	BREAKPOINT_OFF,
+	BREAKPOINT_ON,
+	BREAKPOINT_TEMP
+} breakpoint_t;
+
 vector<char> iowinoutput;
 vector<string> asmtext;
+uint16_t asmtextoffset = 0;
 map<uint16_t, uint16_t> asmaddrtoline;
 map<uint16_t, uint16_t> asmlinetoaddr;
 uint16_t current_line = 0;
-map<uint16_t, int> breakpoints;
+map<uint16_t, breakpoint_t> breakpoints;
 
 double sc_time_stamp() {
 	return main_time;
@@ -195,24 +202,24 @@ void renderAsmWin(WINDOW * asmwin) {
 	nextLine(asmwin);
 	nextLine(asmwin);
 
-	for(int i = 0; i < LINES - 14; i++) {
+	for(int i = asmtextoffset; ((i - asmtextoffset) < LINES - 14) && (i < asmtext.size()); i++) {
 		uint16_t addr = strtol(asmtext[i].c_str(), NULL, 16);
 		if(current_line == i) {
 			wattron(asmwin, COLOR_PAIR(KWHT));
 			wprintw(asmwin, "%s", asmtext[i].c_str());
 			wattroff(asmwin, COLOR_PAIR(KWHT));
-		} else if(addr == getPC(cpu)) {
-			wattron(asmwin, COLOR_PAIR(KRED));
-			wprintw(asmwin, "%s", asmtext[i].c_str());
-			wattroff(asmwin, COLOR_PAIR(KRED));
-		} else if(breakpoints[addr]) {
-			wattron(asmwin, COLOR_PAIR(KGRN));
-			wprintw(asmwin, "%s", asmtext[i].c_str());
-			wattroff(asmwin, COLOR_PAIR(KGRN));
 		} else if(asmtext[i][3] != ':') {
 			wattron(asmwin, COLOR_PAIR(KMAG));
 			wprintw(asmwin, "%s", asmtext[i].c_str());
 			wattroff(asmwin, COLOR_PAIR(KMAG));
+		} else if(addr == getPC(cpu)) {
+			wattron(asmwin, COLOR_PAIR(KRED));
+			wprintw(asmwin, "%s", asmtext[i].c_str());
+			wattroff(asmwin, COLOR_PAIR(KRED));
+		} else if(breakpoints[addr] == BREAKPOINT_ON) {
+			wattron(asmwin, COLOR_PAIR(KGRN));
+			wprintw(asmwin, "%s", asmtext[i].c_str());
+			wattroff(asmwin, COLOR_PAIR(KGRN));
 		} else {
 			wprintw(asmwin, "%s", asmtext[i].c_str());
 		}
@@ -440,17 +447,17 @@ int main(int argc, char ** argv) {
 				renderScreen(cpu, ramwin, regwin, asmwin, ram_window_start, iowin, cmdwin);
 
 				int allow_run = 0;
-				for(map<uint16_t, int>::iterator it = breakpoints.begin(); it != breakpoints.end(); it++) {
-					if(it->second) {
+				for(map<uint16_t, breakpoint_t>::iterator it = breakpoints.begin(); it != breakpoints.end(); it++) {
+					if(it->second != BREAKPOINT_OFF) {
 						allow_run = 1;
 						break;
 					}
 				}
 
 				if(allow_run) {
-					setCmdWin(cmdwin, "(n)ext, (q)uit, (a) ram, (j/k) scroll, (b) toggle breakpoint, (r)un to breakpoint: ");
+					setCmdWin(cmdwin, "(n)ext, (q)uit, (a) ram, (j/k) scroll, (b) toggle breakpoint, (o) step over, (r)un to breakpoint: ");
 				} else {
-					setCmdWin(cmdwin, "(n)ext, (q)uit, (a) ram, (j/k) scroll, (b) toggle breakpoint: ");
+					setCmdWin(cmdwin, "(n)ext, (q)uit, (a) ram, (j/k) scroll, (b) toggle breakpoint, (o) step over: ");
 				}
 
 				char address[100];
@@ -460,23 +467,35 @@ int main(int argc, char ** argv) {
 					default:
 						break;
 					case 'j':
-						current_line++;
+						if(current_line < (asmtext.size() - 1)) {
+							current_line++;
+							if((current_line - asmtextoffset) > (LINES - 15)) {
+								asmtextoffset++;
+							}
+						}
 						break;
 					case 'k':
 						if(current_line != 0) {
 							current_line--;
+							if((current_line - asmtextoffset) < 0) {
+								asmtextoffset--;
+							}
 						}
 						break;
 					case 'b':
 						try {
 							addr = asmlinetoaddr.at(current_line);
 						} catch(const exception e) {
-							setCmdWin(cmdwin, "invalid addr for breakpoint");
+							break;
 						}
 						try {
-							breakpoints.at(addr) = !breakpoints.at(addr);
+							if(breakpoints.at(addr) == BREAKPOINT_ON) {
+								breakpoints[addr] = BREAKPOINT_OFF;
+							} else if(breakpoints.at(addr) == BREAKPOINT_OFF) {
+								breakpoints[addr] = BREAKPOINT_ON;
+							}
 						} catch(const exception e) {
-							breakpoints.at(addr) = 1;
+							breakpoints[addr] = BREAKPOINT_ON;
 						}
 						break;
 					case 'q':
@@ -498,12 +517,20 @@ int main(int argc, char ** argv) {
 						if(allow_run) {
 							run_to_breakpoint = 1;
 						}
+						break;
+					case 'o':
+						breakpoints[getPC(cpu)+1] = BREAKPOINT_TEMP;
+						run_to_breakpoint = 1;
+						break;
 				}
 			}
 		}
 
 		if(breakpoints[getPC(cpu)]) {
 			run_to_breakpoint = 0;
+			if(breakpoints[getPC(cpu)] == BREAKPOINT_TEMP) {
+				breakpoints[getPC(cpu)] = BREAKPOINT_OFF;
+			}
 		}
 		
 		// Advance time
