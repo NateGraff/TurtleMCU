@@ -6,8 +6,8 @@ DEBUGGER_DIR = debugger
 
 default: cpu
 
-rom: $(ASM_DIR)/test.s
-	$(MAKE) -j -C $(ASM_DIR)
+rom:
+	$(MAKE) -j -C $(ASM_DIR) testio
 	cp $(ASM_DIR)/rom.sv $(SRC_DIR)/rom.sv
 
 cpu: rom $(SRC_DIR)/*.sv $(TEST_DIR)/cpu_tb.cpp
@@ -22,7 +22,7 @@ DEBUG_SRC = $(DEBUG_SRC_C)
 debugger: rom $(SRC_DIR)/*.sv $(DEBUG_SRC)
 	verilator -cc $(SRC_DIR)/cpu.sv -I$(SRC_DIR) -O0 --exe $(DEBUG_SRC_C) -LDFLAGS -lncurses
 	$(MAKE) -j -C obj_dir/ -f Vcpu.mk
-	./obj_dir/Vcpu
+	./obj_dir/Vcpu $(ASM_DIR)/rom.dis
 
 units: rf ram alu pc
 	./obj_dir/Vrf
@@ -50,4 +50,5 @@ clean:
 	rm -rf obj_dir
 	rm -f src/rom.sv
 	rm -f asm/rom.sv
+	rm -f asm/rom.dis
 	rm -rf asm/__pycache__

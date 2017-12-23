@@ -3,3 +3,4 @@ obj_dir/*
 *.pyc
 src/rom.sv
 asm/rom.sv
+asm/rom.dis

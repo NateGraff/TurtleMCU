@@ -21,7 +21,7 @@ def main():
 		exit(1)
 
 	with open(sys.argv[1], 'r') as source:
-		with open("rom.sv", 'w') as rom:
+		with open("rom.sv", 'w') as rom, open ("rom.dis", 'w') as disasm:
 			rom.write("""
 `include "constants.sv"
 module rom(
@@ -185,6 +185,82 @@ always_comb begin
 			rom.write("""		endcase
 	end
 endmodule\n""")
+
+			# print disassembly
+			address = 0
+			for parsed in parsedSource:
+				if(parsed['type'] == 'directive'):
+					if(parsed['directive'] == '.org'):
+						address = int(parsed['address'], 16)
+					elif(parsed['directive'] == '.string'):
+						address += len(ast.literal_eval(parsed['stringcontent'])) + 1
+					elif(parsed['directive'] == '.ldtag'):
+						destdefine = parsed['dest']
+						tagaddr = tags[parsed['tagref']]
+						disasm.write("{:03x}: mvh {}, 0x{:02x}\n".format(address, destdefine, 0xFF & (tagaddr >> 8)))
+						address += 1
+						disasm.write("{:03x}: mvl {}, 0x{:02x}\n".format(address, destdefine, 0xFF & tagaddr))
+						address += 1
+					elif(parsed['directive'] == '.resv'):
+						address += int(parsed['size'])
+					continue
+
+				if('tag' in parsed.keys()):
+					if(parsed['tag'] in tags):
+						tag = parsed['tag']
+						address = tags[tag]
+						disasm.write("{:03x} <{}>\n".format(address, tag))
+
+				if(parsed['type'] == 'oponly'):
+					opcode = parsed['opcode']
+					disasm.write("{:03x}: {}\n".format(address, opcode))
+					address += 1
+				elif(parsed['type'] == 'reg'):
+					opcode = parsed['opcode']
+					dest = parsed['dest']
+					disasm.write("{:03x}: {} {}\n".format(address, opcode, dest))
+					address += 1
+				elif(parsed['type'] == 'regimm'):
+					opcode = parsed['opcode']
+					dest = parsed['dest']
+					imm = parsed['src']
+					disasm.write("{:03x}: {} {}, {}\n".format(address, opcode, dest, imm))
+					address += 1
+				elif(parsed['type'] == 'regoffset'):
+					opcode = parsed['opcode']
+					dest = parsed['dest']
+					if('offset' in parsed.keys()):
+						src = '[sp' + parsed['offset'] + ']'
+					else:
+						src = '[sp]'
+					disasm.write("{:03x}: {} {}, {}\n".format(address, opcode, dest, src))
+					address += 1
+				elif(parsed['type'] == 'regreg'):
+					opcode = parsed['opcode']
+					dest = parsed['dest']
+					src = parsed['src']
+					disasm.write("{:03x}: {} {}, {}\n".format(address, opcode, dest, src))
+					address += 1
+				elif(parsed['type'] == 'regregoffset'):
+					opcode = parsed['opcode']
+					dest = parsed['dest']
+					if('offset' in parsed.keys()):
+						src = '[' + parsed['src'] + parsed['offset'] + ']'
+					else:
+						src = '[' + parsed['src'] + ']'
+					disasm.write("{:03x}: {} {}, {}\n".format(address, opcode, dest, src))
+					address += 1
+				elif(parsed['type'] == 'tag'):
+					opcode = parsed['opcode']
+					tagref = parsed['tagref']
+					disasm.write("{:03x}: {} {}\n".format(address, opcode, tagref))
+					address += 1
+				elif(parsed['type'] == 'addr'):
+					opcode = parsed['opcode']
+					addr = parsed['address']
+					disasm.write("{:03x}: {} {}\n".format(address, opcode, addr))
+					address += 1
+
 
 if __name__ == "__main__":
 	main()

@@ -13,9 +13,11 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <queue>
 #include <vector>
+#include <map>
 
 using namespace std;
 
@@ -31,6 +33,11 @@ vluint64_t main_time = 0;
 Vcpu * cpu;
 
 vector<char> iowinoutput;
+vector<string> asmtext;
+map<uint16_t, uint16_t> asmaddrtoline;
+map<uint16_t, uint16_t> asmlinetoaddr;
+uint16_t current_line = 0;
+map<uint16_t, int> breakpoints;
 
 double sc_time_stamp() {
 	return main_time;
@@ -184,7 +191,34 @@ void renderAsmWin(WINDOW * asmwin) {
 	werase(asmwin);
 	box(asmwin, 0, 0);
 	wmove(asmwin, 1, 2);
-	wprintw(asmwin, "Assembly");
+	wprintw(asmwin, "Disassembly");
+	nextLine(asmwin);
+	nextLine(asmwin);
+
+	for(int i = 0; i < LINES - 14; i++) {
+		uint16_t addr = strtol(asmtext[i].c_str(), NULL, 16);
+		if(current_line == i) {
+			wattron(asmwin, COLOR_PAIR(KWHT));
+			wprintw(asmwin, "%s", asmtext[i].c_str());
+			wattroff(asmwin, COLOR_PAIR(KWHT));
+		} else if(addr == getPC(cpu)) {
+			wattron(asmwin, COLOR_PAIR(KRED));
+			wprintw(asmwin, "%s", asmtext[i].c_str());
+			wattroff(asmwin, COLOR_PAIR(KRED));
+		} else if(breakpoints[addr]) {
+			wattron(asmwin, COLOR_PAIR(KGRN));
+			wprintw(asmwin, "%s", asmtext[i].c_str());
+			wattroff(asmwin, COLOR_PAIR(KGRN));
+		} else if(asmtext[i][3] != ':') {
+			wattron(asmwin, COLOR_PAIR(KMAG));
+			wprintw(asmwin, "%s", asmtext[i].c_str());
+			wattroff(asmwin, COLOR_PAIR(KMAG));
+		} else {
+			wprintw(asmwin, "%s", asmtext[i].c_str());
+		}
+		nextLine(asmwin);
+	}
+
 	wrefresh(asmwin);
 }
 
@@ -282,6 +316,21 @@ int main(int argc, char ** argv) {
 	WINDOW * iowin  = createIOWin();
 	WINDOW * cmdwin = createCmdWin();
 
+	if(argc > 1) {
+		ifstream asmfile(argv[1]);
+		uint16_t lineno = 0;
+		for(string line; getline(asmfile, line); ) {
+			asmtext.push_back(line);
+			if(line[3] == ':') {
+				uint16_t addr = strtol(line.c_str(), NULL, 16);
+				asmlinetoaddr[lineno] = addr;
+				asmaddrtoline[addr] = lineno;
+			}
+			lineno++;
+		}
+		asmfile.close();
+	}
+
 	cpu = new Vcpu;
 
 	// Initialize inputs
@@ -320,6 +369,8 @@ int main(int argc, char ** argv) {
 
 	queue<char> input_queue;
 
+	int run_to_breakpoint = 0;
+
 	while(!Verilated::gotFinish() && !quit) {
 		// Advance the clock
 		clk = !clk;
@@ -347,6 +398,7 @@ int main(int argc, char ** argv) {
 				}
 				port_state = PORT_IDLE;
 			}
+			renderScreen(cpu, ramwin, regwin, asmwin, ram_window_start, iowin, cmdwin);
 		}
 
 		// Console input
@@ -382,17 +434,50 @@ int main(int argc, char ** argv) {
 		}
 
 		// Debugger flow control
-		if(clk == 1 && getState(cpu) == 0b011) {
+		if(clk == 1 && getState(cpu) == 0b011 && !run_to_breakpoint) {
 			next = 0;
-			while(!next && !quit) {
+			while(!next && !quit && !run_to_breakpoint) {
 				renderScreen(cpu, ramwin, regwin, asmwin, ram_window_start, iowin, cmdwin);
 
-				setCmdWin(cmdwin, "(n)ext, (q)uit, (r)am: ");
+				int allow_run = 0;
+				for(map<uint16_t, int>::iterator it = breakpoints.begin(); it != breakpoints.end(); it++) {
+					if(it->second) {
+						allow_run = 1;
+						break;
+					}
+				}
+
+				if(allow_run) {
+					setCmdWin(cmdwin, "(n)ext, (q)uit, (a) ram, (j/k) scroll, (b) toggle breakpoint, (r)un to breakpoint: ");
+				} else {
+					setCmdWin(cmdwin, "(n)ext, (q)uit, (a) ram, (j/k) scroll, (b) toggle breakpoint: ");
+				}
 
 				char address[100];
+				uint16_t addr;
 
 				switch(wgetch(cmdwin)) {
 					default:
+						break;
+					case 'j':
+						current_line++;
+						break;
+					case 'k':
+						if(current_line != 0) {
+							current_line--;
+						}
+						break;
+					case 'b':
+						try {
+							addr = asmlinetoaddr.at(current_line);
+						} catch(const exception e) {
+							setCmdWin(cmdwin, "invalid addr for breakpoint");
+						}
+						try {
+							breakpoints.at(addr) = !breakpoints.at(addr);
+						} catch(const exception e) {
+							breakpoints.at(addr) = 1;
+						}
 						break;
 					case 'q':
 					case 'Q':
@@ -401,7 +486,7 @@ int main(int argc, char ** argv) {
 							quit = 1;
 						}
 						break;
-					case 'r':
+					case 'a':
 						setCmdWin(cmdwin, "Enter address: ");
 						wgetstr(cmdwin, address);
 						ram_window_start = strtol(address, NULL, 16);
@@ -409,8 +494,16 @@ int main(int argc, char ** argv) {
 					case 'n':
 						next = 1;
 						break;
+					case 'r':
+						if(allow_run) {
+							run_to_breakpoint = 1;
+						}
 				}
 			}
+		}
+
+		if(breakpoints[getPC(cpu)]) {
+			run_to_breakpoint = 0;
 		}
 		
 		// Advance time
