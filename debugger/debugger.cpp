@@ -522,6 +522,7 @@ int main(int argc, char ** argv) {
 
 		if(breakpoints[getPC(cpu)]) {
 			run = 0;
+			nodelay(cmdwin, false);
 			if(breakpoints[getPC(cpu)] == BREAKPOINT_TEMP) {
 				breakpoints[getPC(cpu)] = BREAKPOINT_OFF;
 			}
