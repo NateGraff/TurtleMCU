@@ -6,23 +6,31 @@ DEBUGGER_DIR = debugger
 
 default: cpu
 
-rom:
+rom: $(SRC_DIR)/rom.sv
+
+$(ASM_DIR)/rom.sv: $(ASM_DIR)/testio.s
 	$(MAKE) -j -C $(ASM_DIR) testio
+
+$(SRC_DIR)/rom.sv: $(ASM_DIR)/rom.sv
 	cp $(ASM_DIR)/rom.sv $(SRC_DIR)/rom.sv
 
-cpu: rom $(SRC_DIR)/*.sv $(TEST_DIR)/cpu_tb.cpp
-	verilator -cc $(SRC_DIR)/cpu.sv -I$(SRC_DIR) --trace --trace-structs --exe $(TEST_DIR)/cpu_tb.cpp
-	$(MAKE) -j -C obj_dir/ -f Vcpu.mk
+cpu: obj_dir/Vcpu
 	./obj_dir/Vcpu
 
-DEBUG_SRC_C = $(DEBUGGER_DIR)/*.cpp
-#DEBUG_SRC_H = $(DEBUGGER_DIR)/*.h
-DEBUG_SRC = $(DEBUG_SRC_C)
-
-debugger: rom $(SRC_DIR)/*.sv $(DEBUG_SRC)
-	verilator -cc $(SRC_DIR)/cpu.sv -I$(SRC_DIR) -O0 --exe $(DEBUG_SRC_C) -LDFLAGS -lncurses
+obj_dir/Vcpu: rom $(SRC_DIR)/*.sv $(TEST_DIR)/cpu_tb.cpp
+	verilator -cc $(SRC_DIR)/cpu.sv -I$(SRC_DIR) --trace --trace-structs --exe $(TEST_DIR)/cpu_tb.cpp
 	$(MAKE) -j -C obj_dir/ -f Vcpu.mk
-	./obj_dir/Vcpu $(ASM_DIR)/rom.dis
+
+DEBUG_SRC_C = $(DEBUGGER_DIR)/*.cpp
+DEBUG_SRC_H = $(DEBUGGER_DIR)/*.h
+DEBUG_SRC = $(DEBUG_SRC_C) $(DEBUG_SRC_H)
+
+obj_dir/debugger: rom $(SRC_DIR)/*.sv $(DEBUG_SRC)
+	verilator -cc $(SRC_DIR)/cpu.sv -I$(SRC_DIR) -O0 --exe $(DEBUG_SRC_C) -LDFLAGS -lncurses -o debugger
+	$(MAKE) -j -C obj_dir/ -f Vcpu.mk
+
+debugger: obj_dir/debugger
+	./obj_dir/debugger $(ASM_DIR)/rom.dis
 
 units: rf ram alu pc
 	./obj_dir/Vrf
