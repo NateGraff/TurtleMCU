@@ -13,6 +13,6 @@ public:
 	void setText(string text);
 	void render();
 	char getc();
-	void gets(char * input);
+	void gets(char * input, size_t n);
 	void setBlocking(bool blocking);
 };

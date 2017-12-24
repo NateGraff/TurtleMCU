@@ -16,8 +16,8 @@ char CmdWindow::getc() {
 	return wgetch(win);
 }
 
-void CmdWindow::gets(char * input) {
-	wgetstr(win, input);
+void CmdWindow::gets(char * input, size_t n) {
+	wgetnstr(win, input, n);
 }
 
 void CmdWindow::setBlocking(bool blocking) {

@@ -199,10 +199,10 @@ int main(int argc, char ** argv) {
 
 						if(run) {
 							cmdwin.setBlocking(true);
-							cmdwin.gets(input);
+							cmdwin.gets(input, 1000);
 							cmdwin.setBlocking(false);
 						} else {
-							cmdwin.gets(input);
+							cmdwin.gets(input, 1000);
 						}
 
 						// Load input into input queue
@@ -257,7 +257,7 @@ int main(int argc, char ** argv) {
 						break;
 					case 'a':
 						cmdwin.setText("Enter address: ");
-						cmdwin.gets(address);
+						cmdwin.gets(address, 100);
 						ramwin.window_start = strtol(address, NULL, 16);
 						break;
 					case 'n':
