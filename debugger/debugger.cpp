@@ -6,6 +6,8 @@
 #include "RamWindow.h"
 #include "RegWindow.h"
 
+#include "escapechars.h"
+
 #include <verilated.h>
 #include "../obj_dir/Vcpu.h"
 #include "../obj_dir/Vcpu_cpu.h"
@@ -152,7 +154,7 @@ int main(int argc, char ** argv) {
 		PORT_IN
 	} port_state = PORT_IDLE;
 
-	queue<char> input_queue;
+	queue<uint16_t> input_queue;
 
 	while(!Verilated::gotFinish() && !quit) {
 		// Advance the clock
@@ -206,8 +208,10 @@ int main(int argc, char ** argv) {
 						}
 
 						// Load input into input queue
-						for(int i = 0; i < 1000 && input[i] != 0; i++) {
-							input_queue.push(input[i]);
+						queue<uint16_t> escapedInput = escapeString(input);
+						while(!escapedInput.empty()) {
+							input_queue.push(escapedInput.front());
+							escapedInput.pop();
 						}
 						input_queue.push('\n');
 
