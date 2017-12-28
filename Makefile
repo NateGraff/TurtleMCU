@@ -32,6 +32,13 @@ obj_dir/debugger: rom $(SRC_DIR)/*.sv $(DEBUG_SRC)
 debugger: obj_dir/debugger
 	./obj_dir/debugger $(ASM_DIR)/rom.dis
 
+challenge1:
+	$(MAKE) -j -C $(ASM_DIR) challenge1
+	cp $(ASM_DIR)/rom.sv $(SRC_DIR)/rom.sv
+	verilator -cc $(SRC_DIR)/cpu.sv -I$(SRC_DIR) -O0 --exe $(DEBUG_SRC_C) -LDFLAGS -lncurses -o debugger
+	$(MAKE) -j -C obj_dir/ -f Vcpu.mk
+	./obj_dir/debugger $(ASM_DIR)/rom.dis
+
 units: rf ram alu pc
 	./obj_dir/Vrf
 	./obj_dir/Vram
