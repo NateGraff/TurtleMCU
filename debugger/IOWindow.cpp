@@ -14,17 +14,31 @@ void IOWindow::render() {
 
 	int consoleHeight = (height - 5);
 	int consoleWidth = (width - 4);
-	for(int i = 0; i < consoleHeight; i++) {
-		for(int j = 0; j < consoleWidth && (i * consoleWidth + j) < output.size(); j++) {
-			char c = output[i * consoleWidth + j];
-			if(c != '\n') {
-				wprintw(win, "%c", c);
-			} else {
-				nextLine();
-			}
+	int y = 0;
+	int x = 0;
+
+	for(int i = 0; i < output.size(); i++) {
+		char c = output[i];
+		if(c == '\n') {
+			nextLine();
+			y++;
+			x = 0;
+		} else {
+			wprintw(win, "%c", c);
+			x++;
 		}
-		nextLine();
+
+		if(x > consoleWidth) {
+			nextLine();
+			x = 0;
+			y++;
+		}
+
+		if(y > consoleHeight) {
+			break;
+		}
 	}
+
 	refresh();
 }
 
