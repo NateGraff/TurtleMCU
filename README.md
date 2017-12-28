@@ -16,6 +16,7 @@ As it stands, there are now a number of components to the project:
 - A very simple instruction set architecture for the microprocessor which fits in a fixed 16-bit word length.
 - An assembler for the TurtleMCU assembly language written in Python 3 using pyparsing
 - An interactive debugger written in C++ using the Verilator simulation of the CPU.
+- A small collection of challenges inspired by Microcorruption CTF.
 - Some (very incomplete) verification unit tests of the individual modules of the CPU using Verilator
 
 ## Software Requirements
@@ -30,9 +31,17 @@ As it stands, there are now a number of components to the project:
 
 ## Simulating the CPU
 
-Simply run `make` in the top level directory. Values output from the CPU will be shown on STDOUT. The trace of the internal CPU signals can be found in obj_dir/cpu_trace.vcd.
+Simply run `make` in the top level directory. This will assemble a simple example, build the C++ model of the CPU with verilator, compile the simulation, and launch the debugger.
 
-The code executed by the CPU is located in asm/test.s.
+The code executed by the CPU is located in asm/testio.s.
+
+### Available Targets
+
+- `test1`: A small suite of tests to verify the CPU behaves as designed.
+- `testio`: A simple text I/O example.
+- challenges: Starting with target `challenge1`, a small collection of security challenges inspired by Microcorruption CTF.
+- `integration`: Runs the integration and unit tests.
+- `units`: Runs the unit tests.
 
 ## Copyright
 
