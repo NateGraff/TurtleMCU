@@ -283,7 +283,7 @@ int main(int argc, char ** argv) {
 		if(asmwin.breakpoints[getPC(cpu)] != BREAKPOINT_OFF) {
 			run = false;
 			cmdwin.setBlocking(true);
-			asmwin.toggleBreakpoint(getPC(cpu));
+			asmwin.clearTempBreakpoints();
 		}
 
 		if(run) {
