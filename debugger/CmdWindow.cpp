@@ -1,5 +1,10 @@
 #include "CmdWindow.h"
 
+CmdWindow::CmdWindow() {
+	// Enable function key input
+	keypad(win, true);
+}
+
 void CmdWindow::setText(string text) {
 	this->text = text;
 	render();
@@ -12,7 +17,7 @@ void CmdWindow::render() {
 	refresh();
 }
 
-char CmdWindow::getc() {
+int CmdWindow::getc() {
 	return wgetch(win);
 }
 

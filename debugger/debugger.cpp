@@ -235,18 +235,21 @@ int main(int argc, char ** argv) {
 			while(!next && !quit && !run) {
 				renderScreen(&ramwin, &regwin, &asmwin, &iowin, &cmdwin);
 
-				cmdwin.setText("(n)ext, (o) step over, (j/k) scroll, (b) toggle breakpoint, (r)un, (a) ram, (q)uit: ");
+				cmdwin.setText("(n)ext, (o) step over, (b) toggle breakpoint, (r)un, (a) set ram address, (q)uit: ");
 
 				char address[100];
 				uint16_t addr;
 
-				switch(cmdwin.getc()) {
+				int c = cmdwin.getc();
+				switch(c) {
 					default:
 						break;
 					case 'j':
+					case KEY_DOWN:
 						asmwin.scrollDown();
 						break;
 					case 'k':
+					case KEY_UP:
 						asmwin.scrollUp();
 						break;
 					case 'b':
@@ -276,6 +279,11 @@ int main(int argc, char ** argv) {
 						run = true;
 						cmdwin.setBlocking(false);
 						break;
+				}
+				if(c == KEY_NPAGE) {
+					asmwin.scrollDown(16);
+				} else if(c == KEY_PPAGE) {
+					asmwin.scrollUp(16);
 				}
 			}
 		}

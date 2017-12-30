@@ -32,5 +32,7 @@ public:
 	void setTempBreakpoint(uint16_t addr);
 	void clearTempBreakpoints();
 	void scrollDown();
+	void scrollDown(int lines);
 	void scrollUp();
+	void scrollUp(int lines);
 };

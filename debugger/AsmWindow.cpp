@@ -99,19 +99,33 @@ void AsmWindow::clearTempBreakpoints() {
 }
 
 void AsmWindow::scrollDown() {
-	if(current_line < (disasm.size() - 1)) {
-		current_line++;
-		if((current_line - text_offset) > (height - 5)) {
-			text_offset++;
-		}
+	scrollDown(1);
+}
+
+void AsmWindow::scrollDown(int lines) {
+	if(current_line + lines < (disasm.size() - 1)) {
+		current_line += lines;
+	} else {
+		current_line = disasm.size() - 1;
+	}
+
+	if((current_line - text_offset) > (height - 5)) {
+		text_offset += lines;
 	}
 }
 
 void AsmWindow::scrollUp() {
-	if(current_line != 0) {
-		current_line--;
+	scrollUp(1);
+}
+
+void AsmWindow::scrollUp(int lines) {
+	if(current_line - lines > 0) {
+		current_line -= lines;
 		if((current_line - text_offset) < 0) {
-			text_offset--;
+			text_offset -= lines;
 		}
+	} else {
+		current_line = 0;
+		text_offset = 0;
 	}
 }
