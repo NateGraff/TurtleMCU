@@ -67,9 +67,29 @@ void IOWindow::writeString(char * str) {
 }
 
 void IOWindow::shrink() {
-	int consoleSize = (height - 5) * (width - 4);
-	while(output.size() > consoleSize) {
-		output.erase(output.begin());
+	int x = 0;
+	int y = 0;
+
+	// Count backwards so we find the spot to truncate the beginning
+	for(int i = output.size() - 1; i >= 0; i--) {
+		// Increment position
+		if(output[i] == '\n') {
+			x = 0;
+			y++;
+		} else {
+			x++;
+		}
+
+		if(x > (width - 5)) {
+			x = 0;
+			y++;
+		}
+
+		// If we max out the height, truncate from the beginning
+		if(y >= (height - 5)) {
+			output.erase(output.begin(), output.begin() + i);
+			break;
+		}
 	}
 }
 
