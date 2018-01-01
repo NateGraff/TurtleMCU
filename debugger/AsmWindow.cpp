@@ -90,6 +90,12 @@ void AsmWindow::setTempBreakpoint(uint16_t addr) {
 	}
 }
 
+void AsmWindow::clearBreakpoints() {
+	for(map<uint16_t, breakpoint_t>::iterator it = breakpoints.begin(); it != breakpoints.end(); it++) {
+		it->second = BREAKPOINT_OFF;
+	}
+}
+
 void AsmWindow::clearTempBreakpoints() {
 	for(map<uint16_t, breakpoint_t>::iterator it = breakpoints.begin(); it != breakpoints.end(); it++) {
 		if(it->second == BREAKPOINT_TEMP) {

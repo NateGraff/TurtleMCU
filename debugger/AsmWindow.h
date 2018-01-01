@@ -30,6 +30,7 @@ public:
 	void toggleBreakpoint();
 	void toggleBreakpoint(uint16_t addr);
 	void setTempBreakpoint(uint16_t addr);
+	void clearBreakpoints();
 	void clearTempBreakpoints();
 	void scrollDown();
 	void scrollDown(int lines);

@@ -235,7 +235,7 @@ int main(int argc, char ** argv) {
 			while(!next && !quit && !run) {
 				renderScreen(&ramwin, &regwin, &asmwin, &iowin, &cmdwin);
 
-				cmdwin.setText("(n)ext, (o) step over, (b) toggle breakpoint, (r)un, (a) set ram address, (z) reset, (q)uit: ");
+				cmdwin.setText("(n)ext, (o) step over, (b) toggle breakpoint, (c)lear breakpoints, (r)un, (a) set ram address, (z) reset, (q)uit: ");
 
 				char address[100];
 				uint16_t addr;
@@ -291,6 +291,12 @@ int main(int argc, char ** argv) {
 							resetCPU(cpu, &clk);
 							iowin.clear();
 							next = true;
+						}
+						break;
+					case 'c':
+						cmdwin.setText("Are you sure you want to clear all breakpoints? (y/n): ");
+						if(cmdwin.getc() == 'y') {
+							asmwin.clearBreakpoints();
 						}
 						break;
 				}
