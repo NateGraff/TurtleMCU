@@ -15,4 +15,5 @@ public:
 	void writeChar(char c);
 	void writeInt(uint16_t d);
 	void writeString(char * str);
+	void clear();
 };

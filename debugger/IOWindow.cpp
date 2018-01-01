@@ -72,3 +72,7 @@ void IOWindow::shrink() {
 		output.erase(output.begin());
 	}
 }
+
+void IOWindow::clear() {
+	output.erase(output.begin(), output.end());
+}
