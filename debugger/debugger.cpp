@@ -286,9 +286,12 @@ int main(int argc, char ** argv) {
 						cmdwin.setBlocking(false);
 						break;
 					case 'z':
-						resetCPU(cpu, &clk);
-						iowin.clear();
-						next = true;
+						cmdwin.setText("Are you sure you want to reset? (y/n): ");
+						if(cmdwin.getc() == 'y') {
+							resetCPU(cpu, &clk);
+							iowin.clear();
+							next = true;
+						}
 						break;
 				}
 			}
