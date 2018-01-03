@@ -1,0 +1,860 @@
+\documentclass[titlepage]{article}
+\usepackage[utf8]{inputenc}
+
+\pagenumbering{arabic}
+
+\title{The Turtle Assembly Language}
+\author{Nathaniel Graff}
+\date{ }
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\newpage
+
+\section{Introduction}
+This document describes the instruction set architecture and assembly language of the Turtle microcontroller.
+
+\section{Registers}
+
+\subsection{Special Purpose Registers}
+
+The Turtle microprocessor has two special purpose registers, the program counter and stack pointer.
+
+\subsubsection{pc --- Program Counter}
+
+The Program Counter (pc) stores the 10-bit memory address of the instruction currently being executed. At initialization and after CPU reset, the pc is set to 0x000. After every execute cycle of the CPU, the program counter is incremented.
+
+The value of the pc can be immediately set with the jmp and call instructions, set to the top value on the stack with the ret instruction, and conditionally set with the jc, jnc, jz, and jnz instructions.
+
+\subsubsection{sp --- Stack Pointer}
+
+The Stack Pointer (sp) stores the 10-bit memory address of the top of the stack. At initialization and after CPU reset, the sp is set to 0x3FF. When values are pushed onto the stack, the sp is decremented, and when values are popped off of the stack, the value is incremented. The sp always holds the address of the next-available space to store a value on the stack, therefore sp + 1 is the memory address of the last value pushed onto the stack.
+
+\subsection{General Purpose Registers}
+
+The Turtle microcontroller has 8 general purpose 16-bit registers, named r0, r1, r2, ... r7. At CPU initialization and reset, the general purpose registers are set to 0x0000. The high and low byte of each register can be independently set from immediate value using the mvh and mvl instructions, and the value in any register can be cleared (set to 0x0000) using the clr instruction.
+
+Arithmetic operations on registers can only be performed register-to-register, unlike other architectures which often support register-immediate arithmetic operations.
+
+\section{Flags}
+
+The Turtle microprocessor has two flags, a Carry Flag (c) and Zero Flag (z).
+
+\section{Instructions}
+
+The Turtle microprocessor uses a fixed-width, 16-bit instruction word. The first 5 bits of each word is reserved for the opcode, leading to a total of 32 available instructions.
+
+\subsection{Operations with No Arguments}
+
+\subsubsection{nop --- No Operation}
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+0 & 0 & 0 & 0 & 0 & - & - & - & - & - & - & - & - & - & - & - \\
+\hline
+\multicolumn{5}{|c|}{Opcode} &
+\multicolumn{11}{|c|}{Ignored} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & No operation is performed \\
+{\bf Arguments} & none \\
+{\bf Side effects} & none \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    nop
+\end{verbatim}
+
+\subsubsection{ret --- Return from Function}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+0 & 1 & 1 & 1 & 1 & - & - & - & - & - & - & - & - & - & - & - \\
+\hline
+\multicolumn{5}{|c|}{Opcode} &
+\multicolumn{11}{|c|}{Ignored} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & Execution returns from function call by loading the program counter with the value located in memory at the top of the stack (sp + 1). \\
+{\bf Arguments} & none \\
+{\bf Side effects} & The stack pointer is incremented. \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+      call myfunc
+done: jmp done
+
+myfunc: add r0, r1
+        ret
+\end{verbatim}
+
+\subsection{Register Operations}
+
+\subsubsection{push --- Push Register to Stack}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+1 & 0 & 0 & 0 & 0 & a & a & a & - & - & - & - & - & - & - & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Register} &
+\multicolumn{8}{|c|}{Ignored} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The value in the argument register is pushed onto the stack. \\
+{\bf Arguments} & The register to push onto the stack \\
+{\bf Side effects} & The stack pointer is decremented. \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    mvh  r0, 0x55
+    mvh  r0, 0xAA
+    push r0       # 0x55AA is pushed onto the stack
+\end{verbatim}
+
+\subsubsection{pop --- Pop from Stack to Register}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+1 & 0 & 0 & 0 & 1 & a & a & a & - & - & - & - & - & - & - & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Register} &
+\multicolumn{8}{|c|}{Ignored} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The value at the top of the stack (located at sp + 1) is loaded into the argument register. \\
+{\bf Arguments} & The register to store the value from the stack \\
+{\bf Side effects} & The stack pointer is incremented. \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    pop r0
+\end{verbatim}
+
+\subsubsection{in --- Store Value from CPU Port to Register}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+0 & 0 & 1 & 1 & 0 & a & a & a & - & - & - & - & - & - & - & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Register} &
+\multicolumn{8}{|c|}{Ignored} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & A value is read from the input port into the argument register. \\
+{\bf Arguments} & The register to store the value from the input port \\
+{\bf Side effects} & none \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    in r0
+\end{verbatim}
+
+\subsubsection{out --- Output Value from Register to CPU Port}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+0 & 0 & 1 & 1 & 1 & a & a & a & - & - & - & - & - & - & - & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Register} &
+\multicolumn{8}{|c|}{Ignored} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The value from the argument register is output to the output port. \\
+{\bf Arguments} & The register to output \\
+{\bf Side effects} & none \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    mvh r0, 0x55
+    mvl r0, 0xAA
+    out r0       # 0x55AA is output from the CPU
+\end{verbatim}
+
+\subsubsection{clr --- Clear Register}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+1 & 1 & 0 & 1 & 0 & a & a & a & - & - & - & - & - & - & - & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Register} &
+\multicolumn{8}{|c|}{Ignored} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The argument register is set to 0x0000. \\
+{\bf Arguments} & The register to clear \\
+{\bf Side effects} & none \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    clr r0
+\end{verbatim}
+
+\subsubsection{lsp (Register) --- Load Stack Pointer from Register}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+1 & 1 & 1 & 0 & 0 & a & a & a & - & - & - & - & - & - & - & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Register} &
+\multicolumn{8}{|c|}{Ignored} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The stack pointer is set with the bottom 10 bits of the argument register. \\
+{\bf Arguments} & The register to set the stack pointer to \\
+{\bf Side effects} & none \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    clr r0
+    mvl r0, 0xAA
+    lsp r0       # the stack pointer is set to 0x0AA
+\end{verbatim}
+
+\subsubsection{rsp --- Load Stack Pointer into Register}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+1 & 1 & 1 & 0 & 1 & a & a & a & - & - & - & - & - & - & - & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Register} &
+\multicolumn{8}{|c|}{Ignored} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The value of the stack pointer is loaded into the argument register. \\
+{\bf Arguments} & The register to store the value of the stack pointer \\
+{\bf Side effects} & none \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    rsp r0
+\end{verbatim}
+
+\subsubsection{not --- Bitwise Not}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+1 & 0 & 1 & 1 & 0 & a & a & a & - & - & - & - & - & - & - & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Register} &
+\multicolumn{8}{|c|}{Ignored} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The bits of the argument register are inverted and stored back in that register. \\
+{\bf Arguments} & The register to apply the operation to \\
+{\bf Side effects} & If the result is zero, the zero flag is set. The carry flag is cleared. \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    clr r0
+    mvl r0, 0xAA
+    not r0       # r0 is now 0xFF55
+\end{verbatim}
+
+\subsection{Register-Register Operations}
+
+\subsubsection{mv --- Move Value From Register to Register}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+0 & 0 & 0 & 0 & 1 & a & a & a & b & b & b & - & - & - & - & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Reg A} &
+\multicolumn{3}{|c}{Reg B} &
+\multicolumn{5}{|c|}{Ignored} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The value in register B is stored in register A. \\
+{\bf Arguments} & The destination register A and the source register B \\
+{\bf Side effects} & none \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    clr r1
+    mvl r1, 0x55
+    mv r0, r1    # r0 is now 0x0055
+\end{verbatim}
+
+\subsubsection{add --- Add}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+1 & 0 & 0 & 1 & 0 & a & a & a & b & b & b & - & - & - & - & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Reg A} &
+\multicolumn{3}{|c}{Reg B} &
+\multicolumn{5}{|c|}{Ignored} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The value in register B is added to the value in register A and stored in register A. \\
+{\bf Arguments} & The two registers to add \\
+{\bf Side effects} & If the addition operation overflows, the carry flag is set. If the result is zero, the zero flag is set. \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    add r0, r1
+\end{verbatim}
+
+\subsubsection{sub --- Subtract}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+1 & 0 & 0 & 1 & 1 & a & a & a & b & b & b & - & - & - & - & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Reg A} &
+\multicolumn{3}{|c}{Reg B} &
+\multicolumn{5}{|c|}{Ignored} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The value in register B is subtracted from the value in register A and the result is stored in register A. \\
+{\bf Arguments} & The two registers to subtract \\
+{\bf Side effects} & If the result is zero, the zero flag is set, if the result underflows, the carry flag is set. \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    sub r0, r1
+\end{verbatim}
+
+\subsubsection{cmp --- Compare}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+0 & 1 & 0 & 0 & 0 & a & a & a & b & b & b & - & - & - & - & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Reg A} &
+\multicolumn{3}{|c}{Reg B} &
+\multicolumn{5}{|c|}{Ignored} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The value in register A is compared to the value in register B. The values in both registers are interpereted as 2's complement. \\
+{\bf Arguments} & The two registers to compare \\
+{\bf Side effects} & If the two registers are equal, the zero flag is set. If register B is greater than register A, the carry flag is set. \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    cmp r0, r1
+\end{verbatim}
+
+\subsubsection{and --- Bitwise And}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+1 & 0 & 1 & 0 & 0 & a & a & a & b & b & b & - & - & - & - & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Reg A} &
+\multicolumn{3}{|c}{Reg B} &
+\multicolumn{5}{|c|}{Ignored} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The values in the two argument registers are bitwise and-ed together and the result stored in register A. \\
+{\bf Arguments} & The two registers to and together \\
+{\bf Side effects} & If the result is zero, the zero flag is set. The carry flag is cleared. \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    and r0, r1
+\end{verbatim}
+
+\subsubsection{or --- Bitwise Inclusive Or}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+1 & 0 & 1 & 0 & 1 & a & a & a & b & b & b & - & - & - & - & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Reg A} &
+\multicolumn{3}{|c}{Reg B} &
+\multicolumn{5}{|c|}{Ignored} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The values in the two argument registers are bitwise inclusive or-ed together and the result stored in register A. \\
+{\bf Arguments} & The two registers to inclusive or together \\
+{\bf Side effects} & If the result is zero, the zero flag is set. The carry flag is cleared. \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    or r0, r1
+\end{verbatim}
+
+\subsubsection{xor --- Bitwise Exclusive Or}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+1 & 0 & 1 & 1 & 1 & a & a & a & b & b & b & - & - & - & - & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Reg A} &
+\multicolumn{3}{|c}{Reg B} &
+\multicolumn{5}{|c|}{Ignored} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The values in the two argument registers are bitwise exclusive or-ed together and the result stored in register A. \\
+{\bf Arguments} & The two registers to exclusive or together \\
+{\bf Side effects} & If the result is zero, the zero flag is set. The carry flag is cleared. \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    xor r0, r1
+\end{verbatim}
+
+\subsubsection{shr --- Bitwise Shift Right}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+1 & 1 & 0 & 0 & 0 & a & a & a & b & b & b & - & - & - & - & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Reg A} &
+\multicolumn{3}{|c}{Reg B} &
+\multicolumn{5}{|c|}{Ignored} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The value in register A is shifted to the right a number of bits corresponding to the value of register B. Zeros are shifted in on the left. \\
+{\bf Arguments} & Register A is the value to shift and holds the result of the operation. Register B is the number of bits to shift \\
+{\bf Side effects} & If the result is zero, the zero flag is set. The carry flag is cleared. \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    shr r0, r1
+\end{verbatim}
+
+\subsubsection{shl --- Bitwise Shift Left}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+1 & 1 & 0 & 0 & 1 & a & a & a & b & b & b & - & - & - & - & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Reg A} &
+\multicolumn{3}{|c}{Register B} &
+\multicolumn{5}{|c|}{Ignored} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The value in register A is shifted to the left a number of bits corresponding to the value of register B. Zeros are shifted in on the right. \\
+{\bf Arguments} & Register A is the value to shift and holds the result of the operation. Register B is the number of bits to shift \\
+{\bf Side effects} & If the result is zero, the zero flag is set. The carry flag is cleared. \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    shl r0, r1
+\end{verbatim}
+
+\subsection{Register-Immediate Operations}
+
+\subsubsection{mvh --- Move High Byte into Register}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+0 & 0 & 0 & 1 & 0 & a & a & a & i & i & i & i & i & i & i & i \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Register} &
+\multicolumn{8}{|c|}{Immediate} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The 8-bit immediate value is stored in the high byte of the argument register. The low byte of the register remains unchanged. \\
+{\bf Arguments} & The destination register and the immediate value \\
+{\bf Side effects} & none \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    mvh r0, 0x55
+\end{verbatim}
+
+\subsubsection{mvl --- Move Low Byte into Register}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+0 & 0 & 0 & 1 & 1 & a & a & a & i & i & i & i & i & i & i & i \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Register} &
+\multicolumn{8}{|c|}{Immediate} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The 8-bit immediate value is stored in the low byte of the argument register. The high byte of the register remains unchanged. \\
+{\bf Arguments} & The destination register and the immediate value \\
+{\bf Side effects} & none \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    mvl r0, 0xAA
+\end{verbatim}
+
+\subsection{Memory Load and Store Operations}
+
+\subsubsection{ld (Register Offset) --- Load Value from Memory}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+1 & 1 & 1 & 1 & 0 & a & a & a & b & b & b & o & o & o & o & o \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Reg A} &
+\multicolumn{3}{|c}{Reg B} &
+\multicolumn{5}{|c|}{Offset} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & A value is loaded from memory and stored in register A. The memory address is calculated by taking the bottom 10 bits of register B and adding the immediate value, interpereted as 2's complement. \\
+{\bf Arguments} & The destination register A, the address register B, and the 5-bit 2's complement immediate value offset \\
+{\bf Side effects} & none \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    clr r1
+    mvl r1, 0x10
+    ld r0, [r1]   # address 0x010
+    ld r0, [r1+5] # address 0x015
+    ld r0, [r1-5] # address 0x00B
+\end{verbatim}
+
+\subsubsection{st (Register Offset) --- Store Value into Memory}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+1 & 1 & 1 & 1 & 1 & a & a & a & b & b & b & o & o & o & o & o \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Reg A} &
+\multicolumn{3}{|c}{Reg B} &
+\multicolumn{5}{|c|}{Offset} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The value in register A is stored in memory. The memory address is calculated by taking the bottom 10 bits of register B and adding the immediate value, interpereted as 2's complement. \\
+{\bf Arguments} & The source register A, the address register B, and the 5-bit 2's complement immediate value offset \\
+{\bf Side effects} & The value at a location in RAM is changed. \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    clr r1
+    mvl r1, 0x10
+    st r0, [r1]   # address 0x010
+    st r0, [r1+5] # address 0x015
+    st r0, [r1-5] # address 0x00B
+\end{verbatim}
+
+\subsubsection{ld (Stack Offset) --- Load Value from Memory}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+0 & 0 & 1 & 0 & 0 & a & a & a & o & o & o & o & o & o & o & o \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Register} &
+\multicolumn{8}{|c|}{Offset} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & A value is loaded from memory and stored in register A. The memory address is calculated by taking the stack pointer and adding the immediate value, interpereted as 2's complement. \\
+{\bf Arguments} & The destination register A and the 8-bit 2's complement immediate value offset \\
+{\bf Side effects} & none \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    lsp 0x050
+    ld r0, [sp]    # address 0x050
+    ld r0, [sp+20] # address 0x064
+    ld r0, [sp-20] # address 0x03C
+\end{verbatim}
+
+\subsubsection{st (Stack Offset) --- Store Value into Memory}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+0 & 0 & 1 & 0 & 1 & a & a & a & o & o & o & o & o & o & o & o \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{3}{|c}{Register} &
+\multicolumn{8}{|c|}{Offset} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The value in register A is stored in memory. The memory address is calculated by taking the stack pointer and adding the immediate value, interpereted as 2's complement. \\
+{\bf Arguments} & The source register A and the 8-bit 2's complement immediate value offset \\
+{\bf Side effects} & The value at a location in RAM is changed. \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    lsp 0x050
+    st r0, [sp]    # address 0x050
+    st r0, [sp+20] # address 0x064
+    st r0, [sp-20] # address 0x03C
+\end{verbatim}
+
+\subsection{Address Operations}
+
+\subsubsection{call --- Call Function}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+0 & 1 & 1 & 1 & 0 & i & i & i & i & i & i & i & i & i & i & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{10}{|c}{Address} &
+\multicolumn{1}{|c|}{} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The value (pc + 1) is pushed onto the stack, and the program counter is set to the argument address.  \\
+{\bf Arguments} & The address to set the program counter to \\
+{\bf Side effects} & The stack pointer is decremented. \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+      call myfunc
+done: jmp done
+
+myfunc: add r0, r1
+        ret
+\end{verbatim}
+
+\subsubsection{jmp --- Unconditional Jump}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+0 & 1 & 0 & 0 & 1 & i & i & i & i & i & i & i & i & i & i & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{10}{|c}{Address} &
+\multicolumn{1}{|c|}{} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The program counter is set to the argument address. \\
+{\bf Arguments} & The address to set the program counter to \\
+{\bf Side effects} & none \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    jmp mytag
+\end{verbatim}
+
+\subsubsection{jc --- Jump if Carry Flag Set}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+0 & 1 & 0 & 1 & 0 & i & i & i & i & i & i & i & i & i & i & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{10}{|c}{Address} &
+\multicolumn{1}{|c|}{} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & If the carry flag is set, the program counter is set to the argument address. \\
+{\bf Arguments} & The address to set the program counter to \\
+{\bf Side effects} & none \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    jc mytag
+\end{verbatim}
+
+\subsubsection{jnc --- Jump if Carry Flag Not Set}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+0 & 1 & 0 & 1 & 1 & i & i & i & i & i & i & i & i & i & i & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{10}{|c}{Address} &
+\multicolumn{1}{|c|}{} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & If the carry flag is not set, the program counter is set to the argument address. \\
+{\bf Arguments} & The address to set the program counter to \\
+{\bf Side effects} & none \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    jnc mytag
+\end{verbatim}
+
+\subsubsection{jz --- Jump if Zero Flag Set}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+0 & 1 & 1 & 0 & 0 & i & i & i & i & i & i & i & i & i & i & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{10}{|c}{Address} &
+\multicolumn{1}{|c|}{} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & If the zero flag is set, the program counter is set to the argument address. \\
+{\bf Arguments} & The address to set the program counter to \\
+{\bf Side effects} & none \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    jz mytag
+\end{verbatim}
+
+\subsubsection{jnz --- Jump if Zero Flag Not Set}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+0 & 1 & 1 & 0 & 1 & i & i & i & i & i & i & i & i & i & i & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{10}{|c}{Address} &
+\multicolumn{1}{|c|}{} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & If the zero flag is not set, the program counter is set to the argument address. \\
+{\bf Arguments} & The address to set the program counter to \\
+{\bf Side effects} & none \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    jnz mytag
+\end{verbatim}
+
+\subsubsection{lsp (Immediate) --- Load Stack Pointer}\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+1 & 1 & 0 & 1 & 1 & i & i & i & i & i & i & i & i & i & i & - \\
+\hline
+\multicolumn{5}{|c}{Opcode} &
+\multicolumn{10}{|c}{Address} &
+\multicolumn{1}{|c|}{} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & The stack pointer is set to the argument address \\
+{\bf Arguments} & The address to set the stack pointer to \\
+{\bf Side effects} & none \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    lsp 0x3FF
+\end{verbatim}
+
+\section{Assembler Directives}
+
+\subsection{.org --- Set Origin}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & Place all following assembly at the argument address, until another .org directive is reached. \\
+{\bf Arguments} & The ROM address \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    .org 0x100
+    nop        # address 0x100
+    nop        # address 0x101
+\end{verbatim}
+
+\subsection{.string --- Store hardcoded string in ROM}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & Place the argument string into the ROM, followed by a null byte. Escape characters (newline, tab, etc.) are supported. \\
+{\bf Arguments} & A tag to identify the string and a quoted string \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    .string mystring "Hello, world!"
+\end{verbatim}
+
+\subsection{.ldtag --- Load the Address of a Tag Into a Register}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & A macro which expands to assembly to store the address of a tag into a register. The result is two operations, a mvh and a mvl.  \\
+{\bf Arguments} & A destination register and the tag to store the address of \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    .ldtag r0, mytag
+\end{verbatim}
+
+\subsection{.resv --- Reserve Space in ROM}
+
+\begin{tabular}{l p{8cm}}
+{\bf Description} & All following assembly is placed after a gap specified by the argument. \\
+{\bf Arguments} & An optional tag, and the size of the reserved space \\
+\end{tabular}\\ \\
+{\bf Example Assembly:}
+\begin{verbatim}
+    .org 0x100
+    .resv 25
+    .resv tagname 25
+    nop              # address 0x132
+\end{verbatim}
+
+\end{document}
