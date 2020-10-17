@@ -11,6 +11,8 @@
 #define KCYN 6
 #define KWHT 7
 
+using namespace std;
+
 uint8_t getState(Vcpu * cpu);
 uint16_t getPC(Vcpu * cpu);
 void getRegisters(Vcpu * cpu, uint16_t * registers);

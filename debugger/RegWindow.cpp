@@ -1,6 +1,8 @@
 #include "RegWindow.h"
 #include "debugger.h"
 
+using namespace std;
+
 RegWindow::RegWindow(Vcpu * cpu) {
 	this->cpu = cpu;
 }

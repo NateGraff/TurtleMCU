@@ -4,3 +4,4 @@ obj_dir/*
 src/rom.sv
 asm/rom.sv
 asm/rom.dis
+venv/

@@ -1,5 +1,7 @@
 #include "IOWindow.h"
 
+using namespace std;
+
 IOWindow::IOWindow(Vcpu * cpu) {
 	this->cpu = cpu;
 }

@@ -4,6 +4,8 @@
 #include "../obj_dir/Vcpu.h"
 #include <vector>
 
+using namespace std;
+
 class IOWindow : public Window {
 protected:
 	Vcpu * cpu;

@@ -4,6 +4,8 @@
 #include <cstdio>
 #include <regex>
 
+using namespace std;
+
 queue<uint16_t> escapeString(string input) {
 	// Create regexae
 	regex newline("\\\\n");

@@ -1,5 +1,7 @@
 #include "CmdWindow.h"
 
+using namespace std;
+
 CmdWindow::CmdWindow() {
 	// Enable function key input
 	keypad(win, true);

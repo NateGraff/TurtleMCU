@@ -2,6 +2,8 @@
 #include "debugger.h"
 #include <fstream>
 
+using namespace std;
+
 AsmWindow::AsmWindow(Vcpu * cpu, char * disasm_filename) {
 	this->cpu = cpu;
 

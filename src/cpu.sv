@@ -24,20 +24,20 @@ module cpu(
 	wire pc_inc;
 	wire pc_load;
 	wire pc_sel;
-	wire [9:0] pc_din;
+	reg [9:0] pc_din;
 	wire [9:0] pc_dout;
 
 	wire [9:0] rom_addr;
 	wire [15:0] rom_dout;
 
 	wire [2:0] ram_addr_sel;
-	wire [9:0] ram_addr;
+	reg [9:0] ram_addr;
 	wire ram_write;
 	wire [1:0] ram_din_sel;
-	wire [15:0] ram_din;
+	reg [15:0] ram_din;
 
 	wire [2:0] rf_din_sel;
-	wire [15:0] rf_din;
+	reg [15:0] rf_din;
 	wire [1:0] rf_write;
 	wire [15:0] rf_a;
 	wire [15:0] rf_b;
@@ -46,7 +46,7 @@ module cpu(
 	wire sp_inc;
 	wire sp_dec;
 	wire sp_sel;
-	wire [9:0] sp_din;
+	reg [9:0] sp_din;
 	wire [9:0] sp_dout;
 
 	control_unit control_unit_i(
@@ -154,7 +154,7 @@ module cpu(
 		.dout(ram_dout));
 
 	wire [7:0] opcode_immed;
-	wire [2:0] opcode_a;
+	reg [2:0] opcode_a;
 	wire [2:0] opcode_b;
 	reg [2:0] opcode_a_last;
 	assign opcode_immed = ram_dout[7:0];

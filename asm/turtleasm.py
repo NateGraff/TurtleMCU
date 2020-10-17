@@ -26,7 +26,7 @@ def main():
 `include "constants.sv"
 module rom(
 input wire [9:0] addr,
-output wire [15:0] dout);
+output reg [15:0] dout);
 
 always_comb begin
 	case(addr)

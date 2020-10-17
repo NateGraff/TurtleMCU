@@ -1,5 +1,7 @@
 #include "Window.h"
 
+using namespace std;
+
 Window::Window() {
 	win = newwin(0, 0, 0, 0);
 }

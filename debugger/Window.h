@@ -2,6 +2,8 @@
 
 #include <ncurses.h>
 
+using namespace std;
+
 class Window {
 protected:
 	WINDOW * win;

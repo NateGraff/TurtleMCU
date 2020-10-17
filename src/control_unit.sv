@@ -55,7 +55,7 @@ module control_unit(
 					rom_addr <= 0;
 				end
 				LOAD_ROM: begin
-					if(rom_addr == 10'h3FFF) begin
+					if(rom_addr == 10'h3FF) begin
 						state <= FETCH;
 					end
 					rom_addr <= rom_addr + 1;

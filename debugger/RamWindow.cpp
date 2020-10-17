@@ -2,6 +2,8 @@
 #include "debugger.h"
 #include <cstring>
 
+using namespace std;
+
 RamWindow::RamWindow(Vcpu * cpu) {
 	this->cpu = cpu;
 	window_start = 0;

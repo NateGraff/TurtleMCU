@@ -7,6 +7,8 @@
 #include <map>
 #include <string>
 
+using namespace std;
+
 typedef map<uint16_t, uint16_t> addrmap_t;
 
 typedef enum {
